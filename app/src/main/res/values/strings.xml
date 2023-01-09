@@ -12,4 +12,5 @@
 
     <string name="contacts_file_name">contacts.json</string>
     <string name="home_fragment_tag">home_frag_tag</string>
+
 </resources>

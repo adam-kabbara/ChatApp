@@ -12,6 +12,8 @@ import androidx.annotation.NonNull;
 import androidx.fragment.app.Fragment;
 
 import com.bumptech.glide.Glide;
+import com.bumptech.glide.load.engine.DiskCacheStrategy;
+import com.bumptech.glide.signature.ObjectKey;
 import com.example.chatapp.R;
 import com.example.chatapp.Utils;
 import com.example.chatapp.databinding.FragmentHomeBinding;
@@ -69,8 +71,8 @@ public class HomeFragment extends Fragment {
         View contactView = getLayoutInflater().inflate(R.layout.contact_box, null);
         ImageView pfpView = contactView.findViewById(R.id.pfp);
         TextView nameView = contactView.findViewById(R.id.contactNameTextView);
-
-        Glide.with(this)
+        // this is a cache image viewer thing todo make sure that the image updates if it changes in the server
+        Glide.with(this)// https://stackoverflow.com/questions/33443146/remove-image-from-cache-in-glide-library
                 .load(pfpUrl)
                 .centerCrop()
                 .placeholder(R.drawable.ic_menu_gallery)
