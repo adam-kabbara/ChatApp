@@ -33,7 +33,6 @@ public class HomeFragment extends Fragment {
     private Context context;
     private String contactsFileName;
     private GoogleSignInAccount signedInAccount;
-    private String userDirectory;
 
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
@@ -44,8 +43,8 @@ public class HomeFragment extends Fragment {
         context = requireActivity().getApplicationContext();
         contactsFileName = getResources().getString(R.string.contacts_file_name);
         signedInAccount = GoogleSignIn.getLastSignedInAccount(context);
-        userDirectory = String.valueOf(context.getFilesDir());
-//        userDirectory = context.getFilesDir()+"/"+signedInAccount.getId();
+        contactsFileName = signedInAccount.getId()+"-"+getResources().getString(R.string.contacts_file_name);
+
         return root;
     }
 
@@ -86,7 +85,7 @@ public class HomeFragment extends Fragment {
     }
 
     public Contact[] readContacts() throws FileNotFoundException, JSONException {
-        File file = new File(userDirectory, contactsFileName);
+        File file = new File(context.getFilesDir(), contactsFileName);
         if (file.exists()){
             JSONArray contactsJSON = new JSONArray(Utils.loadJSONFromAsset(context, contactsFileName));
             Contact[] contactsArray = new Contact[contactsJSON.length()];

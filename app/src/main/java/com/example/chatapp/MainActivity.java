@@ -50,7 +50,6 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     private FirebaseAuth mAuth;
     private GoogleSignInClient mGoogleSignInClient;
     private GoogleSignInAccount signedInAccount;
-    private String userDirectory;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -59,12 +58,12 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         binding = ActivityMainBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
         context = getApplicationContext();
-        contactsFileName = getResources().getString(R.string.contacts_file_name);
         mAuth = FirebaseAuth.getInstance();
         createRequest(); // init mGoogleSignInClient
         signedInAccount = GoogleSignIn.getLastSignedInAccount(this);
-        userDirectory = String.valueOf(context.getFilesDir());
-//        userDirectory = context.getFilesDir()+"/"+signedInAccount.getId();
+        contactsFileName = signedInAccount.getId()+"-"+getResources().getString(R.string.contacts_file_name);
+
+
         setSupportActionBar(binding.appBarMain.toolbar);
         binding.appBarMain.fab.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -106,7 +105,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
 
     // Custom Methods
     private void createNewContact() throws JSONException, IOException { // todo fix this so add contact correctly
-        File file = new File(userDirectory, contactsFileName);
+        File file = new File(context.getFilesDir(), contactsFileName);
         JSONArray data;
         if (file.exists())
             data = new JSONArray(Utils.loadJSONFromAsset(context, contactsFileName));
