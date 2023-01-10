@@ -9,14 +9,16 @@
     tools:context=".ui.home.HomeFragment">
 
     <ScrollView
+        android:id="@+id/scrollView3"
         android:layout_width="409dp"
-        android:layout_height="729dp"
+        android:layout_height="679dp"
         android:paddingStart="20sp"
         android:paddingEnd="20sp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent">
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_bias="0.0">
 
         <LinearLayout
             android:id="@+id/contactScrollable"
@@ -25,7 +27,16 @@
             android:orientation="vertical">
 
         </LinearLayout>
-
     </ScrollView>
 
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/fab"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="end|bottom"
+        android:layout_margin="16dp"
+        android:contentDescription="new contact"
+        android:src="@drawable/ic_baseline_person_add_24"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
 </androidx.constraintlayout.widget.ConstraintLayout>

@@ -8,16 +8,16 @@ import android.view.View;
 import android.view.Menu;
 import android.widget.TextView;
 
-import com.example.chatapp.ui.chat.ChatFragment;
+import com.example.chatapp.ui.new_contact.NewContactFragment;
 import com.example.chatapp.ui.home.HomeFragment;
 import com.google.android.gms.auth.api.signin.GoogleSignIn;
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
 import com.google.android.gms.auth.api.signin.GoogleSignInClient;
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions;
-import com.google.android.material.snackbar.Snackbar;
 import com.google.android.material.navigation.NavigationView;
 
 import androidx.annotation.NonNull;
+import androidx.appcompat.app.ActionBarDrawerToggle;
 import androidx.core.view.GravityCompat;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentTransaction;
@@ -31,16 +31,6 @@ import androidx.appcompat.app.AppCompatActivity;
 import com.example.chatapp.databinding.ActivityMainBinding;
 import com.google.firebase.auth.FirebaseAuth;
 
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
-
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.util.Random;
-
 public class MainActivity extends AppCompatActivity implements NavigationView.OnNavigationItemSelectedListener{
 
     private AppBarConfiguration mAppBarConfiguration;
@@ -50,6 +40,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     private FirebaseAuth mAuth;
     private GoogleSignInClient mGoogleSignInClient;
     private GoogleSignInAccount signedInAccount;
+    private NavigationView navigationView;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -62,22 +53,12 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         createRequest(); // init mGoogleSignInClient
         signedInAccount = GoogleSignIn.getLastSignedInAccount(this);
         contactsFileName = signedInAccount.getId()+"-"+getResources().getString(R.string.contacts_file_name);
+        navigationView = (NavigationView) findViewById(R.id.nav_view);
 
 
         setSupportActionBar(binding.appBarMain.toolbar);
-        binding.appBarMain.fab.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                Snackbar.make(view, "Creating New Contact", Snackbar.LENGTH_LONG)
-                        .setAction("Action", null).show();
-                try {
-                    createNewContact();
-                } catch (JSONException | IOException e) {
-                    e.printStackTrace();
-                }
-            }
-        });
-        setNavigationViewListener();
+
+        navigationView.setNavigationItemSelectedListener(this);
         displayView(R.id.nav_home);
         // Set nav bar header info
         NavigationView navigationView = binding.navView;
@@ -103,28 +84,6 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
                 || super.onSupportNavigateUp();
     }
 
-    // Custom Methods
-    private void createNewContact() throws JSONException, IOException { // todo fix this so add contact correctly
-        File file = new File(context.getFilesDir(), contactsFileName);
-        JSONArray data;
-        if (file.exists())
-            data = new JSONArray(Utils.loadJSONFromAsset(context, contactsFileName));
-        else
-            data = new JSONArray();
-        Random rand = new Random(); // for filler data todo fix
-        JSONObject contact = new JSONObject();
-        contact.put("id", signedInAccount.getId());
-        contact.put("email", signedInAccount.getEmail());
-        contact.put("name", signedInAccount.getDisplayName());
-        contact.put("pfp_url", "https://picsum.photos/"+(rand.nextInt(100)+200));
-        data.put(contact);
-
-        String userString = data.toString();
-        FileWriter fileWriter = new FileWriter(file);
-        BufferedWriter bufferedWriter = new BufferedWriter(fileWriter);
-        bufferedWriter.write(userString);
-        bufferedWriter.close();
-    }
 
     // firebase related - mostly for sign out
     private void signOut(){
@@ -146,7 +105,6 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     // for drawer routes and btns
     @Override
     public boolean onNavigationItemSelected(@NonNull MenuItem item) {
-        System.out.println("fuckkkkkkk");
         if (item.getItemId() == R.id.nav_sign_out)
             signOut();
         else // handel navigation
@@ -156,28 +114,28 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     public void displayView(int viewId) {
         Fragment fragment = null;
         String title = getString(R.string.app_name);
-        switch (viewId) {
-            case R.id.nav_home:
-                fragment = new HomeFragment();
-                break;
-            case R.id.nav_chat:
-                fragment = new ChatFragment();
-                title = "Chat";
-                break;
-        }
-        if (fragment != null) {
-            FragmentTransaction ft = getSupportFragmentManager().beginTransaction();
-            ft.replace(R.id.fragment_content_main, fragment);
-            ft.commit();
-        }
-        if (getSupportActionBar() != null) {
-            getSupportActionBar().setTitle(title);
-        }
         DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
+        ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(this, drawer, binding.appBarMain.toolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close);
+        drawer.addDrawerListener(toggle);
+        toggle.setDrawerIndicatorEnabled(true);
+        toggle.syncState(); // animate hamburger btn
+
+        Utils.redirect(getSupportFragmentManager(), getSupportActionBar(),
+                navigationView, viewId, getString(R.string.app_name));
         drawer.closeDrawer(GravityCompat.START);
     }
-    private void setNavigationViewListener() {
-        NavigationView navigationView = (NavigationView) findViewById(R.id.nav_view);
-        navigationView.setNavigationItemSelectedListener(this);
+
+    @Override
+    public void onBackPressed() {
+        DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
+        HomeFragment myFragment = (HomeFragment) getSupportFragmentManager().findFragmentByTag(String.valueOf(R.id.nav_home));
+        if (drawer.isDrawerOpen(GravityCompat.START)) {
+            drawer.closeDrawer(GravityCompat.START);
+        }
+        else if (!(myFragment != null && myFragment.isVisible())) { //if the current view is not the home fragment
+            displayView(R.id.nav_home); //display the home fragment
+        } else {
+            moveTaskToBack(true);  //If view is in home fragment, exit application
+        }
     }
 }
