@@ -17,6 +17,8 @@ import com.bumptech.glide.signature.ObjectKey;
 import com.example.chatapp.R;
 import com.example.chatapp.Utils;
 import com.example.chatapp.databinding.FragmentHomeBinding;
+import com.google.android.gms.auth.api.signin.GoogleSignIn;
+import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -30,7 +32,8 @@ public class HomeFragment extends Fragment {
     private FragmentHomeBinding binding;
     private Context context;
     private String contactsFileName;
-
+    private GoogleSignInAccount signedInAccount;
+    private String userDirectory;
 
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
@@ -40,9 +43,9 @@ public class HomeFragment extends Fragment {
 
         context = requireActivity().getApplicationContext();
         contactsFileName = getResources().getString(R.string.contacts_file_name);
-
-       // final TextView homeView = binding.textHome;
-       // homeView.setText("this is the contact page");
+        signedInAccount = GoogleSignIn.getLastSignedInAccount(context);
+        userDirectory = String.valueOf(context.getFilesDir());
+//        userDirectory = context.getFilesDir()+"/"+signedInAccount.getId();
         return root;
     }
 
@@ -83,14 +86,13 @@ public class HomeFragment extends Fragment {
     }
 
     public Contact[] readContacts() throws FileNotFoundException, JSONException {
-        System.out.println(context.getFilesDir()+contactsFileName);
-        File file = new File(context.getFilesDir(), contactsFileName);
+        File file = new File(userDirectory, contactsFileName);
         if (file.exists()){
             JSONArray contactsJSON = new JSONArray(Utils.loadJSONFromAsset(context, contactsFileName));
             Contact[] contactsArray = new Contact[contactsJSON.length()];
             for (int i=0; i<contactsJSON.length(); i++){
                 JSONObject c = contactsJSON.getJSONObject(i);
-                contactsArray[i] = new Contact(c.getInt("id"), c.getString("email"), c.getString("name"), c.getString("pfp_url"));
+                contactsArray[i] = new Contact(c.getString("id"), c.getString("email"), c.getString("name"), c.getString("pfp_url"));
             }
             return contactsArray;
         }
