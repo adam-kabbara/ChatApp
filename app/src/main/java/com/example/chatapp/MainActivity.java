@@ -32,7 +32,12 @@ import androidx.appcompat.app.AppCompatActivity;
 import com.example.chatapp.databinding.ActivityMainBinding;
 import com.google.firebase.auth.FirebaseAuth;
 
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -79,6 +84,12 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         currentUserNameTextView.setText(signedInAccount.getDisplayName());
         currentUserEmailTextView.setText(signedInAccount.getEmail());
         //todo put pfp - when first login if no firebase accoutn already use google pfp as chatapp pfp
+
+        try {
+            contacts = readContacts();
+        } catch (FileNotFoundException | JSONException e) {
+            e.printStackTrace();
+        }
     }
 
     @Override
@@ -183,5 +194,19 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
             System.out.println(e); // Error occurred when opening raw file for reading.
         }
         return stringBuilder.toString();
+    }
+
+    public ArrayList<Contact> readContacts() throws FileNotFoundException, JSONException {
+        File file = new File(context.getFilesDir(), contactsFileName);
+        if (file.exists()){
+            JSONArray contactsJSON = new JSONArray(loadJSONFromAsset(context, contactsFileName));
+            ArrayList<Contact> contactsArray = new ArrayList<Contact>();
+            for (int i=0; i<contactsJSON.length(); i++){
+                JSONObject c = contactsJSON.getJSONObject(i);
+                contactsArray.add(new Contact(c.getString("id"), c.getString("email"), c.getString("name"), c.getString("pfp_url")));
+            }
+            return contactsArray;
+        }
+        return null;
     }
 }

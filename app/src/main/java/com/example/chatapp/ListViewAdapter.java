@@ -5,8 +5,10 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.BaseAdapter;
+import android.widget.ImageView;
 import android.widget.TextView;
 
+import com.bumptech.glide.Glide;
 import com.example.chatapp.ui.home.Contact;
 
 import java.util.ArrayList;
@@ -20,14 +22,16 @@ public class ListViewAdapter extends BaseAdapter {
     Context mContext;
     LayoutInflater inflater;
     private List<Contact> contactsList = null;
+    private boolean searchEmail;
     private ArrayList<Contact> arraylist;
 
-    public ListViewAdapter(Context context, List<Contact> contactsList) {
-        mContext = context;
+    public ListViewAdapter(Context context, List<Contact> contactsList, boolean searchEmail) {
+        mContext = context; // if searchEmail is true, ListView Adaptor filters by contact email, else it filters by name
         this.contactsList = contactsList;
         inflater = LayoutInflater.from(mContext);
         this.arraylist = new ArrayList<>();
         this.arraylist.addAll(contactsList);
+        this.searchEmail = searchEmail;
     }
 
     public class ViewHolder {
@@ -53,14 +57,24 @@ public class ListViewAdapter extends BaseAdapter {
         final ViewHolder holder;
         if (view == null) {
             holder = new ViewHolder();
-            view = inflater.inflate(R.layout.list_view_items, null);
-            holder.name = view.findViewById(R.id.name);
+            view = inflater.inflate(R.layout.contact_box, null);
+            holder.name = view.findViewById(R.id.contactNameTextView); // todo add image pfp
             view.setTag(holder);
         } else {
             holder = (ViewHolder) view.getTag();
         }
         // Set the results into TextViews
-        holder.name.setText(contactsList.get(position).getEmail());
+        if (this.searchEmail)
+            holder.name.setText(contactsList.get(position).getEmail());
+        else
+            holder.name.setText(contactsList.get(position).getName());
+        ImageView pfpView = view.findViewById(R.id.pfp);
+        // this is a cache image viewer thing todo make sure that the image updates if it changes in the server
+        Glide.with(view)// https://stackoverflow.com/questions/33443146/remove-image-from-cache-in-glide-library
+                .load(contactsList.get(position).getPfpUrl())
+                .centerCrop()
+                .placeholder(R.drawable.ic_menu_gallery)
+                .into(pfpView);
         return view;
     }
 
@@ -72,12 +86,19 @@ public class ListViewAdapter extends BaseAdapter {
             contactsList.addAll(arraylist);
         } else {
             for (Contact wp : arraylist) {
-                if (wp.getEmail().toLowerCase(Locale.getDefault()).contains(charText)) {
-                    contactsList.add(wp);
+                if (this.searchEmail) {
+                    if (wp.getEmail().toLowerCase(Locale.getDefault()).contains(charText)) {
+                        contactsList.add(wp);
+                    }
+                    else{
+                        if (wp.getName().toLowerCase(Locale.getDefault()).contains(charText)) {
+                            contactsList.add(wp);
+                        }
+                    }
                 }
+
             }
         }
         notifyDataSetChanged();
     }
-
 }

@@ -18,7 +18,7 @@
 
     <SearchView
         android:id="@+id/new_contact_search_view"
-        android:layout_width="match_parent"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="10dp"
         android:iconifiedByDefault="false"
@@ -33,7 +33,7 @@
     <ListView
         android:id="@+id/new_contact_list_view"
         android:layout_width="350dp"
-        android:layout_height="600dp"
+        android:layout_height="550dp"
         android:layout_below="@+id/new_contact_search_view"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
