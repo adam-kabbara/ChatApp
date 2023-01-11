@@ -8,6 +8,7 @@ import android.view.View;
 import android.view.Menu;
 import android.widget.TextView;
 
+import com.example.chatapp.ui.home.Contact;
 import com.example.chatapp.ui.new_contact.NewContactFragment;
 import com.example.chatapp.ui.home.HomeFragment;
 import com.google.android.gms.auth.api.signin.GoogleSignIn;
@@ -31,6 +32,14 @@ import androidx.appcompat.app.AppCompatActivity;
 import com.example.chatapp.databinding.ActivityMainBinding;
 import com.google.firebase.auth.FirebaseAuth;
 
+import java.io.BufferedReader;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+
 public class MainActivity extends AppCompatActivity implements NavigationView.OnNavigationItemSelectedListener{
 
     private AppBarConfiguration mAppBarConfiguration;
@@ -41,6 +50,8 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     private GoogleSignInClient mGoogleSignInClient;
     private GoogleSignInAccount signedInAccount;
     private NavigationView navigationView;
+    private boolean viewIsAtHome = true;
+    public ArrayList<Contact> contacts;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -120,22 +131,57 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         toggle.setDrawerIndicatorEnabled(true);
         toggle.syncState(); // animate hamburger btn
 
-        Utils.redirect(getSupportFragmentManager(), getSupportActionBar(),
-                navigationView, viewId, getString(R.string.app_name));
+        switch (viewId) {
+            case R.id.nav_home:
+                fragment = new HomeFragment();
+                viewIsAtHome = true;
+                break;
+            case R.id.nav_new_contact:
+                fragment = new NewContactFragment();
+                viewIsAtHome = false;
+                title = "New Contact";
+                break;
+        }
+        if (fragment != null) {
+            FragmentTransaction ft = getSupportFragmentManager().beginTransaction();
+            ft.replace(R.id.fragment_content_main, fragment);
+            ft.commit();
+        }
+        if (getSupportActionBar() != null) {
+            getSupportActionBar().setTitle(title);
+        }
+        navigationView.setCheckedItem(viewId);
         drawer.closeDrawer(GravityCompat.START);
     }
 
     @Override
     public void onBackPressed() {
         DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
-        HomeFragment myFragment = (HomeFragment) getSupportFragmentManager().findFragmentByTag(String.valueOf(R.id.nav_home));
         if (drawer.isDrawerOpen(GravityCompat.START)) {
             drawer.closeDrawer(GravityCompat.START);
         }
-        else if (!(myFragment != null && myFragment.isVisible())) { //if the current view is not the home fragment
+        if (!viewIsAtHome) { //if the current view is not the home fragment
             displayView(R.id.nav_home); //display the home fragment
         } else {
             moveTaskToBack(true);  //If view is in home fragment, exit application
         }
+    }
+
+    // shared methods
+    public String loadJSONFromAsset(Context context, String fileName) throws FileNotFoundException {
+        FileInputStream fis = context.openFileInput(fileName);
+        InputStreamReader inputStreamReader =
+                new InputStreamReader(fis, StandardCharsets.UTF_8);
+        StringBuilder stringBuilder = new StringBuilder();
+        try (BufferedReader reader = new BufferedReader(inputStreamReader)) {
+            String line = reader.readLine();
+            while (line != null) {
+                stringBuilder.append(line).append('\n');
+                line = reader.readLine();
+            }
+        } catch (IOException e) {
+            System.out.println(e); // Error occurred when opening raw file for reading.
+        }
+        return stringBuilder.toString();
     }
 }

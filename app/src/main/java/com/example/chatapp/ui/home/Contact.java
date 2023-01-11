@@ -2,7 +2,9 @@ package com.example.chatapp.ui.home;
 
 import android.annotation.SuppressLint;
 
-public class Contact {
+import java.io.Serializable;
+
+public class Contact implements Serializable {
     private final String id;
     private final String email;
     private String name;
@@ -14,6 +16,7 @@ public class Contact {
         this.name = name;
         this.pfpUrl = pfpUrl;
     }
+
     public String getName(){
         return this.name;
     }
