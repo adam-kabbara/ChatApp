@@ -84,12 +84,6 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         currentUserNameTextView.setText(signedInAccount.getDisplayName());
         currentUserEmailTextView.setText(signedInAccount.getEmail());
         //todo put pfp - when first login if no firebase accoutn already use google pfp as chatapp pfp
-
-        try {
-            contacts = readContacts();
-        } catch (FileNotFoundException | JSONException e) {
-            e.printStackTrace();
-        }
     }
 
     @Override

@@ -87,14 +87,12 @@ public class ListViewAdapter extends BaseAdapter {
         } else {
             for (Contact wp : arraylist) {
                 if (this.searchEmail) {
-                    if (wp.getEmail().toLowerCase(Locale.getDefault()).contains(charText)) {
+                    if (wp.getEmail().toLowerCase(Locale.getDefault()).contains(charText))
                         contactsList.add(wp);
-                    }
-                    else{
-                        if (wp.getName().toLowerCase(Locale.getDefault()).contains(charText)) {
-                            contactsList.add(wp);
-                        }
-                    }
+                }
+                else{
+                    if (wp.getName().toLowerCase(Locale.getDefault()).contains(charText))
+                        contactsList.add(wp);
                 }
 
             }

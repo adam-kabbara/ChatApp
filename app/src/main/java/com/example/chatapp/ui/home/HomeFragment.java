@@ -52,7 +52,6 @@ public class HomeFragment extends Fragment {
 
         binding = FragmentHomeBinding.inflate(inflater, container, false);
         View root = binding.getRoot();
-        NavigationView navigationView = (NavigationView) getActivity().findViewById(R.id.nav_view);
         context = requireActivity().getApplicationContext();
         mainActivity = (MainActivity)requireContext();
         contactsFileName = getResources().getString(R.string.contacts_file_name);
@@ -67,31 +66,44 @@ public class HomeFragment extends Fragment {
             } catch (JSONException | IOException e) {
                 e.printStackTrace();
             }
+            try { // delete this later and put firebase users instead
+                mainActivity.contacts = mainActivity.readContacts();
+            } catch (FileNotFoundException | JSONException e) {
+                e.printStackTrace();
+            }
             mainActivity.displayView(R.id.nav_new_contact);
         });
 
-        listView = binding.homeListView;
-        // Pass results to ListViewAdapter Class
-        adapter = new ListViewAdapter(context, mainActivity.contacts, false);
-        listView.setAdapter(adapter);
-        searchView = binding.homeSearchView;
-        searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
-            @Override
-            public boolean onQueryTextSubmit(String arg0) {
-                return false; // true
-            }
+        try {
+            mainActivity.contacts = mainActivity.readContacts();
+        } catch (FileNotFoundException | JSONException e) {
+            e.printStackTrace();
+        }
 
-            @Override
-            public boolean onQueryTextChange(String newText) {
-                String text = newText;
-                adapter.filter(text);
-                return false;
-            }
-        });
+        if (mainActivity.contacts != null){
+            listView = binding.homeListView;
+            // Pass results to ListViewAdapter Class
+            adapter = new ListViewAdapter(context, mainActivity.contacts, false);
+            listView.setAdapter(adapter);
+            searchView = binding.homeSearchView;
+            searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
+                @Override
+                public boolean onQueryTextSubmit(String arg0) {
+                    return false; // true
+                }
 
-        listView.setOnItemClickListener((parent, view, position, id) ->
-                Snackbar.make(view, "Clicked: "+mainActivity.contacts.get(position).getName(), Snackbar.LENGTH_LONG)
-                        .setAction("Action", null).show());
+                @Override
+                public boolean onQueryTextChange(String newText) {
+                    String text = newText;
+                    adapter.filter(text);
+                    return false;
+                }
+            });
+
+            listView.setOnItemClickListener((parent, view, position, id) ->
+                    Snackbar.make(view, "Clicked: " + mainActivity.contacts.get(position).getName(), Snackbar.LENGTH_LONG)
+                            .setAction("Action", null).show());
+        }
 
         return root;
     }
@@ -119,7 +131,7 @@ public class HomeFragment extends Fragment {
         JSONObject contact = new JSONObject();
         contact.put("id", signedInAccount.getId()); // ""+rand.nextInt(500)
         contact.put("email", +rand.nextInt(50000)+signedInAccount.getEmail());
-        contact.put("name", signedInAccount.getDisplayName());
+        contact.put("name", rand.nextInt(50000)+signedInAccount.getDisplayName());
         contact.put("pfp_url", "https://picsum.photos/"+(rand.nextInt(100)+200));
         data.put(contact);
 
