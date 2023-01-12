@@ -5,16 +5,12 @@ import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.SearchView;
-import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.fragment.app.Fragment;
-import androidx.fragment.app.FragmentResultListener;
 
-import com.bumptech.glide.Glide;
 import com.example.chatapp.Contact;
 import com.example.chatapp.ListViewAdapter;
 import com.example.chatapp.MainActivity;
@@ -22,7 +18,6 @@ import com.example.chatapp.R;
 import com.example.chatapp.databinding.FragmentHomeBinding;
 import com.google.android.gms.auth.api.signin.GoogleSignIn;
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
-import com.google.android.material.navigation.NavigationView;
 import com.google.android.material.snackbar.Snackbar;
 
 import org.json.JSONArray;
@@ -34,9 +29,6 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Objects;
 import java.util.Random;
 
 public class HomeFragment extends Fragment {
@@ -61,52 +53,51 @@ public class HomeFragment extends Fragment {
         signedInAccount = GoogleSignIn.getLastSignedInAccount(context);
         contactsFileName = signedInAccount.getId()+"-"+getResources().getString(R.string.contacts_file_name);
         binding.fab.setOnClickListener(view -> {
-            try { // todo create contact from info from firebase
-                createNewContact();
-            } catch (JSONException | IOException e) {
-                e.printStackTrace();
-            }
             mainActivity.displayView(R.id.nav_new_contact);
         });
 
-        try {
-            mainActivity.contacts = mainActivity.readContacts();
-        } catch (FileNotFoundException | JSONException e) {
-            e.printStackTrace();
-        }
-
-        if (mainActivity.contacts != null){
-            listView = binding.homeListView;
-            // Pass results to ListViewAdapter Class
-            adapter = new ListViewAdapter(context, mainActivity.contacts, false);
-            listView.setAdapter(adapter);
-            searchView = binding.homeSearchView;
-            searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
-                @Override
-                public boolean onQueryTextSubmit(String arg0) {
-                    return false; // true
-                }
-
-                @Override
-                public boolean onQueryTextChange(String newText) {
-                    String text = newText;
-                    adapter.filter(text);
-                    return false;
-                }
-            });
-
-            listView.setOnItemClickListener((parent, view, position, id) ->
-                    Snackbar.make(view, "Clicked: " + mainActivity.contacts.get(position).getName(), Snackbar.LENGTH_LONG)
-                            .setAction("Action", null).show());
-        }
-// todo make sure it is working
+        // get data from new contact click in NewContactFragment
         getParentFragmentManager().setFragmentResultListener
-            ("newContactKey", this, (requestKey, bundle) -> {
-                Contact newContact = (Contact) bundle.getSerializable("newContactKey");
-                Snackbar.make(requireActivity().findViewById(android.R.id.content),
-                                "Clicked: " + newContact.getName(), Snackbar.LENGTH_LONG)
-                        .setAction("Action", null).show();
-        });
+                ("requestKey", this, (requestKey, bundle) -> {
+                    Contact newContact = (Contact) bundle.getSerializable("newContactKey");
+                    try {
+                        saveNewContactLocally(newContact);
+
+                        try {
+                            mainActivity.contacts = mainActivity.readContacts();
+                        } catch (FileNotFoundException | JSONException e) {
+                            e.printStackTrace();
+                        }
+
+                        if (mainActivity.contacts != null){
+                            listView = binding.homeListView;
+                            // Pass results to ListViewAdapter Class
+                            adapter = new ListViewAdapter(context, mainActivity.contacts, false);
+                            listView.setAdapter(adapter);
+                            searchView = binding.homeSearchView;
+                            searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
+                                @Override
+                                public boolean onQueryTextSubmit(String arg0) {
+                                    return false; // true
+                                }
+
+                                @Override
+                                public boolean onQueryTextChange(String newText) {
+                                    String text = newText;
+                                    adapter.filter(text);
+                                    return false;
+                                }
+                            });
+
+                            listView.setOnItemClickListener((parent, view, position, id) ->
+                                    //todo go to chat fragment
+                                    Snackbar.make(view, "Clicked: " + mainActivity.contacts.get(position).getName(), Snackbar.LENGTH_LONG)
+                                            .setAction("Action", null).show());
+                        }
+                    } catch (JSONException | IOException e) {
+                        e.printStackTrace();
+                    }
+                });
 
         return root;
     }
@@ -121,20 +112,19 @@ public class HomeFragment extends Fragment {
         binding = null;
     }
 
-    private void createNewContact() throws JSONException, IOException { // todo fix this so add contact correctly
+    private void saveNewContactLocally(Contact contact) throws JSONException, IOException { // todo fix this so add contact correctly
         File file = new File(context.getFilesDir(), contactsFileName);
         JSONArray data;
         if (file.exists())
             data = new JSONArray(mainActivity.loadJSONFromAsset(context, contactsFileName));
         else
             data = new JSONArray();
-        Random rand = new Random(); // for filler data todo fix
-        JSONObject contact = new JSONObject();
-        contact.put("id", signedInAccount.getId()); // ""+rand.nextInt(500)
-        contact.put("email", +rand.nextInt(50000)+signedInAccount.getEmail());
-        contact.put("name", rand.nextInt(50000)+signedInAccount.getDisplayName());
-        contact.put("pfp_url", "https://picsum.photos/"+(rand.nextInt(100)+200));
-        data.put(contact);
+        JSONObject contactJson = new JSONObject();
+        contactJson.put("id", contact.getId());
+        contactJson.put("email", contact.getEmail());
+        contactJson.put("name", contact.getName());
+        contactJson.put("pfp_url", contact.getPfpUrl());
+        data.put(contactJson);
 
         String userString = data.toString();
         FileWriter fileWriter = new FileWriter(file);

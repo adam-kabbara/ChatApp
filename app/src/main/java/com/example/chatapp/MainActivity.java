@@ -84,6 +84,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         contactsFileName = signedInAccount.getId()+"-"+getResources().getString(R.string.contacts_file_name);
         navigationView = (NavigationView) findViewById(R.id.nav_view);
         db = FirebaseFirestore.getInstance();
+        contacts = new ArrayList<>();
 
 
         setSupportActionBar(binding.appBarMain.toolbar);

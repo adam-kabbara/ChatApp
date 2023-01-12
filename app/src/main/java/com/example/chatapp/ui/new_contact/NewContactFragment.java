@@ -20,6 +20,8 @@ import com.example.chatapp.MainActivity;
 import com.example.chatapp.R;
 import com.example.chatapp.databinding.FragmentNewContactBinding;
 import com.example.chatapp.Contact;
+import com.google.android.gms.auth.api.signin.GoogleSignIn;
+import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
 
 import java.util.ArrayList;
@@ -34,6 +36,8 @@ public class NewContactFragment extends Fragment {
     private SearchView searchView;
     private MainActivity mainActivity;
     private DialogInterface.OnClickListener dialogClickListener;
+    private String infoDialogMessage;
+    private GoogleSignInAccount signedInAccount;
 
 
     public View onCreateView(@NonNull LayoutInflater inflater,
@@ -43,7 +47,7 @@ public class NewContactFragment extends Fragment {
         View root = binding.getRoot();
         mainActivity = (MainActivity)requireContext();
         context = requireActivity().getApplicationContext();
-        //assert getArguments() != null;
+        signedInAccount = GoogleSignIn.getLastSignedInAccount(context);
         mainActivity.db.collection("users").get() // this is bad cause it loads all documents
                 .addOnCompleteListener(task -> { // todo add lazyloading
                     ArrayList<Contact> contactsList = new ArrayList<>();
@@ -97,19 +101,46 @@ public class NewContactFragment extends Fragment {
 
     private void dialogBoxSetup(int position, ArrayList<Contact> contactsArrayList){
         dialogClickListener = (dialog, which) -> {
+            Contact clickedContact = contactsArrayList.get(position);
             switch (which) {
                 case DialogInterface.BUTTON_POSITIVE:
-                    Bundle result = new Bundle();
-                    result.putSerializable("newContactKey", contactsArrayList.get(position));
-                    getParentFragmentManager().setFragmentResult("requestKey", result);                    mainActivity.displayView(R.id.nav_home);
+                    if (contactsArrayContains(clickedContact)){
+                        showInfo("aleady got dat mf in ya contacts");
+                    }
+                    else if (clickedContact.getId().equals(signedInAccount.getId())){
+                        showInfo("this is u dum dum");
+                    }
+                    else{
+                        Bundle result = new Bundle();
+                        result.putSerializable("newContactKey", contactsArrayList.get(position));
+                        getParentFragmentManager().setFragmentResult("requestKey", result);
+                        mainActivity.displayView(R.id.nav_home);
+                    }
                     break;
                 case DialogInterface.BUTTON_NEGATIVE:
                     dialog.dismiss();
             }
         };
         AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
-        builder.setMessage("Select yes to display toast message and no to dismiss the dialog ?")
+        builder.setMessage("Are you sure you want to add this user to your local contacts?")
                 .setPositiveButton("Yes", dialogClickListener)
                 .setNegativeButton("No", dialogClickListener).show();
+    }
+
+    private void showInfo(String msg){
+        AlertDialog alertDialog = new AlertDialog.Builder(getActivity()).create();
+        alertDialog.setTitle("Alert");
+        alertDialog.setMessage(msg);
+        alertDialog.setButton(AlertDialog.BUTTON_NEUTRAL, "OK",
+                (dialog, which) -> dialog.dismiss());
+        alertDialog.show();
+    }
+
+    private boolean contactsArrayContains(Contact c){
+        for (Contact contact: mainActivity.contacts){
+                if (contact.getId().equals(c.getId()))
+                    return true;
+        }
+        return false;
     }
 }

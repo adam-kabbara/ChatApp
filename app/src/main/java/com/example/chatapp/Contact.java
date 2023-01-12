@@ -16,6 +16,9 @@ public class Contact implements Serializable {
         this.name = name;
         this.pfpUrl = pfpUrl;
     }
+    public boolean equals(Contact c){
+        return this.id.equals(c.getId());
+    }
 
     public String getName(){
         return this.name;
