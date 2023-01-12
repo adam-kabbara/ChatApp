@@ -9,7 +9,6 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 import com.bumptech.glide.Glide;
-import com.example.chatapp.ui.home.Contact;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -94,7 +93,6 @@ public class ListViewAdapter extends BaseAdapter {
                     if (wp.getName().toLowerCase(Locale.getDefault()).contains(charText))
                         contactsList.add(wp);
                 }
-
             }
         }
         notifyDataSetChanged();

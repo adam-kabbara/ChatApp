@@ -12,8 +12,10 @@ import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentResultListener;
 
 import com.bumptech.glide.Glide;
+import com.example.chatapp.Contact;
 import com.example.chatapp.ListViewAdapter;
 import com.example.chatapp.MainActivity;
 import com.example.chatapp.R;
@@ -34,6 +36,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Objects;
 import java.util.Random;
 
 public class HomeFragment extends Fragment {
@@ -57,18 +60,10 @@ public class HomeFragment extends Fragment {
         contactsFileName = getResources().getString(R.string.contacts_file_name);
         signedInAccount = GoogleSignIn.getLastSignedInAccount(context);
         contactsFileName = signedInAccount.getId()+"-"+getResources().getString(R.string.contacts_file_name);
-
         binding.fab.setOnClickListener(view -> {
-          //  Snackbar.make(view, "Creating New Contact", Snackbar.LENGTH_LONG)
-          //           .setAction("Action", null).show();
             try { // todo create contact from info from firebase
                 createNewContact();
             } catch (JSONException | IOException e) {
-                e.printStackTrace();
-            }
-            try { // delete this later and put firebase users instead
-                mainActivity.contacts = mainActivity.readContacts();
-            } catch (FileNotFoundException | JSONException e) {
                 e.printStackTrace();
             }
             mainActivity.displayView(R.id.nav_new_contact);
@@ -104,6 +99,14 @@ public class HomeFragment extends Fragment {
                     Snackbar.make(view, "Clicked: " + mainActivity.contacts.get(position).getName(), Snackbar.LENGTH_LONG)
                             .setAction("Action", null).show());
         }
+// todo make sure it is working
+        getParentFragmentManager().setFragmentResultListener
+            ("newContactKey", this, (requestKey, bundle) -> {
+                Contact newContact = (Contact) bundle.getSerializable("newContactKey");
+                Snackbar.make(requireActivity().findViewById(android.R.id.content),
+                                "Clicked: " + newContact.getName(), Snackbar.LENGTH_LONG)
+                        .setAction("Action", null).show();
+        });
 
         return root;
     }
@@ -117,8 +120,6 @@ public class HomeFragment extends Fragment {
         super.onDestroyView();
         binding = null;
     }
-
-
 
     private void createNewContact() throws JSONException, IOException { // todo fix this so add contact correctly
         File file = new File(context.getFilesDir(), contactsFileName);

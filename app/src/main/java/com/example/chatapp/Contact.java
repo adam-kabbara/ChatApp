@@ -1,4 +1,4 @@
-package com.example.chatapp.ui.home;
+package com.example.chatapp;
 
 import android.annotation.SuppressLint;
 

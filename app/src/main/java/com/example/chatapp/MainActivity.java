@@ -1,20 +1,25 @@
 package com.example.chatapp;
 
+import static java.util.Objects.requireNonNull;
+
 import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.Menu;
+import android.widget.ImageView;
 import android.widget.TextView;
 
-import com.example.chatapp.ui.home.Contact;
+import com.bumptech.glide.Glide;
 import com.example.chatapp.ui.new_contact.NewContactFragment;
 import com.example.chatapp.ui.home.HomeFragment;
 import com.google.android.gms.auth.api.signin.GoogleSignIn;
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
 import com.google.android.gms.auth.api.signin.GoogleSignInClient;
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions;
+import com.google.android.gms.tasks.OnCompleteListener;
+import com.google.android.gms.tasks.Task;
 import com.google.android.material.navigation.NavigationView;
 
 import androidx.annotation.NonNull;
@@ -31,6 +36,9 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import com.example.chatapp.databinding.ActivityMainBinding;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.firestore.DocumentReference;
+import com.google.firebase.firestore.DocumentSnapshot;
+import com.google.firebase.firestore.FirebaseFirestore;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -44,6 +52,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.HashMap;
 
 public class MainActivity extends AppCompatActivity implements NavigationView.OnNavigationItemSelectedListener{
 
@@ -55,8 +64,12 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     private GoogleSignInClient mGoogleSignInClient;
     private GoogleSignInAccount signedInAccount;
     private NavigationView navigationView;
+    private View headerView;
+    private ImageView headerViewImage;
     private boolean viewIsAtHome = true;
     public ArrayList<Contact> contacts;
+    public FirebaseFirestore db;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -70,6 +83,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         signedInAccount = GoogleSignIn.getLastSignedInAccount(this);
         contactsFileName = signedInAccount.getId()+"-"+getResources().getString(R.string.contacts_file_name);
         navigationView = (NavigationView) findViewById(R.id.nav_view);
+        db = FirebaseFirestore.getInstance();
 
 
         setSupportActionBar(binding.appBarMain.toolbar);
@@ -78,12 +92,14 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         displayView(R.id.nav_home);
         // Set nav bar header info
         NavigationView navigationView = binding.navView;
-        View headerView = navigationView.getHeaderView(0);
+        headerView = navigationView.getHeaderView(0);
         TextView currentUserNameTextView = headerView.findViewById(R.id.currentUserName);
         TextView currentUserEmailTextView = headerView.findViewById(R.id.currentUserEmail);
         currentUserNameTextView.setText(signedInAccount.getDisplayName());
         currentUserEmailTextView.setText(signedInAccount.getEmail());
         //todo put pfp - when first login if no firebase accoutn already use google pfp as chatapp pfp
+        headerViewImage = headerView.findViewById(R.id.imageView);
+        setPfpFromFire(signedInAccount.getId(), headerViewImage);
     }
 
     @Override
@@ -131,11 +147,18 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         Fragment fragment = null;
         String title = getString(R.string.app_name);
         DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
-        ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(this, drawer, binding.appBarMain.toolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close);
+        ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(this, drawer,
+            binding.appBarMain.toolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close){
+                public void onDrawerOpened(View drawerView) {
+                    super.onDrawerOpened(drawerView);
+                    setPfpFromFire(signedInAccount.getId(), headerViewImage);
+                }
+        };
         drawer.addDrawerListener(toggle);
         toggle.setDrawerIndicatorEnabled(true);
         toggle.syncState(); // animate hamburger btn
 
+        // navigate roots
         switch (viewId) {
             case R.id.nav_home:
                 fragment = new HomeFragment();
@@ -202,5 +225,45 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
             return contactsArray;
         }
         return null;
+    }
+
+    // given an imageView and a fire document id , retrieve an image from firestore and place it in imageveiw
+    public void setPfpFromFire(String documentId, ImageView imageView){
+        DocumentReference docRef = db.collection("users").document(documentId);
+        docRef.get().addOnCompleteListener(new OnCompleteListener<DocumentSnapshot>() {
+            @Override
+            public void onComplete(@NonNull Task<DocumentSnapshot> task) {
+                String imageUrl = "";
+                if (task.isSuccessful()) {
+                    DocumentSnapshot document = task.getResult();
+                    if (document.exists()) {
+                        imageUrl = (String) document.get("pfp_url");
+                    } else {
+                        if (documentId.equals(signedInAccount.getId())){ // new usr
+                            imageUrl = String.valueOf(signedInAccount.getPhotoUrl());
+                            setNewUserFire();
+                        }
+                        else{ // todo show error message
+                            System.out.println("User not found");
+                        }
+                    }
+                    Glide.with(headerView)
+                            .load(imageUrl)
+                            .centerCrop()
+                            .placeholder(R.drawable.ic_menu_gallery)
+                            .into(imageView);
+                } else {
+                    System.out.println( "get failed with "+ task.getException());
+                }
+            }
+        });
+    }
+
+    public void setNewUserFire(){
+        HashMap<String, String> data = new HashMap<>();
+        data.put("name", signedInAccount.getDisplayName());
+        data.put("email", signedInAccount.getEmail());
+        data.put("pfp_url", String.valueOf(signedInAccount.getPhotoUrl()));
+        db.collection("users").document(requireNonNull(signedInAccount.getId())).set(data);
     }
 }
