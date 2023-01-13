@@ -225,7 +225,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
             }
             return contactsArray;
         }
-        return null;
+        return new ArrayList<Contact>();
     }
 
     // given an imageView and a fire document id , retrieve an image from firestore and place it in imageveiw

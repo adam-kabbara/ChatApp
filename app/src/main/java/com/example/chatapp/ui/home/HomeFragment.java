@@ -56,45 +56,16 @@ public class HomeFragment extends Fragment {
             mainActivity.displayView(R.id.nav_new_contact);
         });
 
+        initPage();
         // get data from new contact click in NewContactFragment
         getParentFragmentManager().setFragmentResultListener
                 ("requestKey", this, (requestKey, bundle) -> {
                     Contact newContact = (Contact) bundle.getSerializable("newContactKey");
                     try {
                         saveNewContactLocally(newContact);
-
-                        try {
-                            mainActivity.contacts = mainActivity.readContacts();
-                        } catch (FileNotFoundException | JSONException e) {
-                            e.printStackTrace();
+                       // initPage();
                         }
-
-                        if (mainActivity.contacts != null){
-                            listView = binding.homeListView;
-                            // Pass results to ListViewAdapter Class
-                            adapter = new ListViewAdapter(context, mainActivity.contacts, false);
-                            listView.setAdapter(adapter);
-                            searchView = binding.homeSearchView;
-                            searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
-                                @Override
-                                public boolean onQueryTextSubmit(String arg0) {
-                                    return false; // true
-                                }
-
-                                @Override
-                                public boolean onQueryTextChange(String newText) {
-                                    String text = newText;
-                                    adapter.filter(text);
-                                    return false;
-                                }
-                            });
-
-                            listView.setOnItemClickListener((parent, view, position, id) ->
-                                    //todo go to chat fragment
-                                    Snackbar.make(view, "Clicked: " + mainActivity.contacts.get(position).getName(), Snackbar.LENGTH_LONG)
-                                            .setAction("Action", null).show());
-                        }
-                    } catch (JSONException | IOException e) {
+                    catch (JSONException | IOException e) {
                         e.printStackTrace();
                     }
                 });
@@ -131,5 +102,40 @@ public class HomeFragment extends Fragment {
         BufferedWriter bufferedWriter = new BufferedWriter(fileWriter);
         bufferedWriter.write(userString);
         bufferedWriter.close();
+    }
+
+    private void initPage(){
+        try {
+            mainActivity.contacts = mainActivity.readContacts();
+        } catch (FileNotFoundException | JSONException e) {
+            e.printStackTrace();
+        }
+
+        if (mainActivity.contacts != null){
+            listView = binding.homeListView;
+            // Pass results to ListViewAdapter Class
+            adapter = new ListViewAdapter(context, mainActivity.contacts, false);
+            listView.setAdapter(adapter);
+            searchView = binding.homeSearchView;
+            searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
+                @Override
+                public boolean onQueryTextSubmit(String arg0) {
+                    return false; // true
+                }
+
+                @Override
+                public boolean onQueryTextChange(String newText) {
+                    String text = newText;
+                    adapter.filter(text);
+                    return false;
+                }
+            });
+
+            listView.setOnItemClickListener((parent, view, position, id) ->
+                    //todo go to chat fragment
+                    Snackbar.make(view, "Clicked: " + mainActivity.contacts.get(position).getName(), Snackbar.LENGTH_LONG)
+                            .setAction("Action", null).show());
+        }
+
     }
 }
