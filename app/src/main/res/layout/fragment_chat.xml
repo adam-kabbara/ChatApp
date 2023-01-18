@@ -1,14 +1,66 @@
 <?xml version="1.0" encoding="utf-8"?>
-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     tools:context=".ui.chat.ChatFragment">
 
-    <TextView
-        android:id="@+id/textView3"
-        android:layout_width="wrap_content"
+
+    <EditText
+        android:id="@+id/plain_text_input"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:text="TextView"
-        android:textSize="20sp"/>
-</FrameLayout>
+        android:layout_marginBottom="10dp"
+        android:autofillHints="Type a message"
+        android:background="@drawable/edit_text_background"
+        android:inputType="textMultiLine"
+        android:maxLines="5"
+        android:paddingStart="10dp"
+        android:paddingEnd="10dp"
+        android:scrollbars="vertical"
+        android:textCursorDrawable="@drawable/color_cursor"
+        app:backgroundTint="@color/teal_700"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toStartOf="@+id/sendButton"
+        app:layout_constraintHorizontal_bias="0.5"
+        app:layout_constraintStart_toStartOf="parent" />
+
+    <ImageView
+        android:id="@+id/sendButton"
+        android:layout_width="40dp"
+        android:layout_height="wrap_content"
+        android:layout_margin="8dp"
+        android:background="@color/teal_700"
+        android:src="@android:drawable/ic_menu_send"
+        app:layout_constraintBottom_toBottomOf="@+id/plain_text_input"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.5"
+        app:layout_constraintStart_toEndOf="@+id/plain_text_input"
+        app:layout_constraintTop_toTopOf="@+id/plain_text_input"
+        tools:ignore="contentDescription" />
+
+    <ScrollView
+        android:id="@+id/scrollView"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        app:layout_constraintBottom_toTopOf="@+id/plain_text_input"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
+
+        <LinearLayout
+            android:id="@+id/linearLayout"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+            <TextView
+                android:id="@+id/textView3"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="TextView"
+                android:textSize="20sp"
+                />
+        </LinearLayout>
+    </ScrollView>
+</androidx.constraintlayout.widget.ConstraintLayout>

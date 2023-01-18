@@ -8,12 +8,15 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
+import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.SearchView;
+import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.fragment.app.Fragment;
 
+import com.bumptech.glide.Glide;
 import com.example.chatapp.Contact;
 import com.example.chatapp.ListViewAdapter;
 import com.example.chatapp.MainActivity;
@@ -66,7 +69,6 @@ public class HomeFragment extends Fragment {
                     Contact newContact = (Contact) bundle.getSerializable("newContactKey");
                     try {
                         saveNewContactLocally(newContact);
-                        //initNewContactFire(newContact);
                         initPage();
                         }
                     catch (JSONException | IOException e) {
@@ -162,13 +164,9 @@ public class HomeFragment extends Fragment {
                 System.out.println(position);
             });
 
-            listView.setOnItemLongClickListener(new AdapterView.OnItemLongClickListener() {
-                @Override
-                public boolean onItemLongClick(AdapterView<?> arg0, View arg1,
-                                               int pos, long id) {
-                    dialogBoxSetup(pos);
-                    return true;
-                }
+            listView.setOnItemLongClickListener((arg0, arg1, pos, id) -> {
+                dialogBoxSetup(pos);
+                return true;
             });
         }
 
