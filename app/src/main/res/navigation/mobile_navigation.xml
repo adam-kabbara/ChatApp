@@ -17,4 +17,10 @@
         android:label="New Contact"
         tools:layout="@layout/fragment_new_contact" />
 
+    <fragment
+        android:id="@+id/nav_chat"
+        android:name="com.example.chatapp.ui.chat.ChatFragment"
+        android:label="Chat"
+        tools:layout="@layout/fragment_chat" />
+
 </navigation>

@@ -105,10 +105,10 @@ public class NewContactFragment extends Fragment {
             switch (which) {
                 case DialogInterface.BUTTON_POSITIVE:
                     if (contactsArrayContains(clickedContact)){
-                        showInfo("aleady got dat mf in ya contacts");
+                        showAlert("aleady got dat dude in ya contacts");
                     }
                     else if (clickedContact.getId().equals(signedInAccount.getId())){
-                        showInfo("this is u dum dum");
+                        showAlert("this is u dum dum");
                     }
                     else{
                         Bundle result = new Bundle();
@@ -127,7 +127,7 @@ public class NewContactFragment extends Fragment {
                 .setNegativeButton("No", dialogClickListener).show();
     }
 
-    private void showInfo(String msg){
+    private void showAlert(String msg){
         AlertDialog alertDialog = new AlertDialog.Builder(getActivity()).create();
         alertDialog.setTitle("Alert");
         alertDialog.setMessage(msg);

@@ -1,10 +1,13 @@
 package com.example.chatapp.ui.home;
 
+import android.app.AlertDialog;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.AdapterView;
 import android.widget.ListView;
 import android.widget.SearchView;
 
@@ -18,7 +21,6 @@ import com.example.chatapp.R;
 import com.example.chatapp.databinding.FragmentHomeBinding;
 import com.google.android.gms.auth.api.signin.GoogleSignIn;
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
-import com.google.android.material.snackbar.Snackbar;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -29,7 +31,7 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.util.Random;
+
 
 public class HomeFragment extends Fragment {
 
@@ -41,6 +43,7 @@ public class HomeFragment extends Fragment {
     private ListView listView;
     private ListViewAdapter adapter;
     private SearchView searchView;
+    private DialogInterface.OnClickListener dialogClickListener;
 
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
@@ -63,7 +66,8 @@ public class HomeFragment extends Fragment {
                     Contact newContact = (Contact) bundle.getSerializable("newContactKey");
                     try {
                         saveNewContactLocally(newContact);
-                       // initPage();
+                        //initNewContactFire(newContact);
+                        initPage();
                         }
                     catch (JSONException | IOException e) {
                         e.printStackTrace();
@@ -83,7 +87,7 @@ public class HomeFragment extends Fragment {
         binding = null;
     }
 
-    private void saveNewContactLocally(Contact contact) throws JSONException, IOException { // todo fix this so add contact correctly
+    private void saveNewContactLocally(Contact contact) throws JSONException, IOException {
         File file = new File(context.getFilesDir(), contactsFileName);
         JSONArray data;
         if (file.exists())
@@ -103,8 +107,27 @@ public class HomeFragment extends Fragment {
         bufferedWriter.write(userString);
         bufferedWriter.close();
     }
+    // maybe create a method to delete the paths where msgs travel from on contact
+    // to another is db
+    private void deleteContactLocally(Contact contact) throws IOException, JSONException { // todo also delete all msgs
+        File file = new File(context.getFilesDir(), contactsFileName);
+        JSONArray data = new JSONArray(mainActivity.loadJSONFromAsset(context, contactsFileName));
+        JSONArray modifiedData = new JSONArray();
+
+        for (int i=0;i< data.length();i++) {
+            if (!contact.getId().equals(data.getJSONObject(i).getString("id")))
+                modifiedData.put(data.get(i));
+        }
+
+        String userString = modifiedData.toString();
+        FileWriter fileWriter = new FileWriter(file);
+        BufferedWriter bufferedWriter = new BufferedWriter(fileWriter);
+        bufferedWriter.write(userString);
+        bufferedWriter.close();
+    }
 
     private void initPage(){
+        Bundle result = new Bundle();
         try {
             mainActivity.contacts = mainActivity.readContacts();
         } catch (FileNotFoundException | JSONException e) {
@@ -130,12 +153,46 @@ public class HomeFragment extends Fragment {
                     return false;
                 }
             });
-
+            listView.setLongClickable(true);
             listView.setOnItemClickListener((parent, view, position, id) ->
-                    //todo go to chat fragment
-                    Snackbar.make(view, "Clicked: " + mainActivity.contacts.get(position).getName(), Snackbar.LENGTH_LONG)
-                            .setAction("Action", null).show());
+            {
+                result.putSerializable("pressedContactKey", mainActivity.contacts.get(position));
+                getParentFragmentManager().setFragmentResult("requestKey2", result);
+                mainActivity.displayView(R.id.nav_chat);
+                System.out.println(position);
+            });
+
+            listView.setOnItemLongClickListener(new AdapterView.OnItemLongClickListener() {
+                @Override
+                public boolean onItemLongClick(AdapterView<?> arg0, View arg1,
+                                               int pos, long id) {
+                    dialogBoxSetup(pos);
+                    return true;
+                }
+            });
         }
 
+    }
+
+    private void dialogBoxSetup(int position){
+        Contact contact = mainActivity.contacts.get(position);
+        dialogClickListener = (dialog, which) -> {
+            switch (which) {
+                case DialogInterface.BUTTON_POSITIVE:
+                    try {
+                        deleteContactLocally(contact);
+                        mainActivity.displayView(R.id.nav_home);
+                    } catch (IOException | JSONException e) {
+                        e.printStackTrace();
+                    }
+                    break;
+                case DialogInterface.BUTTON_NEGATIVE:
+                    dialog.dismiss();
+            }
+        };
+        AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
+        builder.setMessage("Are you sure you want to delete " + contact.getName()+ " from your local contacts?")
+                .setPositiveButton("Yes", dialogClickListener)
+                .setNegativeButton("No", dialogClickListener).show();
     }
 }

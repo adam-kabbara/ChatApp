@@ -12,6 +12,7 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 import com.bumptech.glide.Glide;
+import com.example.chatapp.ui.chat.ChatFragment;
 import com.example.chatapp.ui.new_contact.NewContactFragment;
 import com.example.chatapp.ui.home.HomeFragment;
 import com.google.android.gms.auth.api.signin.GoogleSignIn;
@@ -158,6 +159,8 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         drawer.addDrawerListener(toggle);
         toggle.setDrawerIndicatorEnabled(true);
         toggle.syncState(); // animate hamburger btn
+        drawer.setDrawerLockMode(DrawerLayout.LOCK_MODE_UNLOCKED);
+
 
         // navigate roots
         switch (viewId) {
@@ -170,6 +173,10 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
                 viewIsAtHome = false;
                 title = "New Contact";
                 break;
+            case R.id.nav_chat:
+                fragment = new ChatFragment();
+                viewIsAtHome = false;
+                drawer.setDrawerLockMode(DrawerLayout.LOCK_MODE_LOCKED_CLOSED);
         }
         if (fragment != null) {
             FragmentTransaction ft = getSupportFragmentManager().beginTransaction();
