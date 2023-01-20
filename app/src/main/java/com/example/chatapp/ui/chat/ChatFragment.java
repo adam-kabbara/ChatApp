@@ -4,6 +4,7 @@ import android.content.Context;
 import android.os.Bundle;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 
 import android.util.Log;
@@ -26,10 +27,23 @@ import com.google.android.gms.auth.api.signin.GoogleSignIn;
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.firebase.Timestamp;
+import com.google.firebase.firestore.DocumentSnapshot;
+import com.google.firebase.firestore.EventListener;
 import com.google.firebase.firestore.FieldValue;
+import com.google.firebase.firestore.FirebaseFirestoreException;
 
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -41,6 +55,7 @@ public class ChatFragment extends Fragment {
     private MainActivity mainActivity;
     private Context context;
     private Contact receiverContact;
+    private String messageFileName;
 
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
@@ -49,19 +64,57 @@ public class ChatFragment extends Fragment {
         mainActivity = (MainActivity)requireContext();
         context = requireActivity().getApplicationContext();
         signedInAccount = GoogleSignIn.getLastSignedInAccount(context);
+
         ImageView sendButton = binding.sendButton;
         EditText editText = binding.plainTextInput;
         ScrollView scrollView = binding.scrollView;
+        initPage();
 
         sendButton.setOnClickListener(view -> {
             String message = String.valueOf(editText.getText());
             addMessageBox(message, true);
             scrollView.post(() -> scrollView.fullScroll(View.FOCUS_DOWN));
             sendMessageFire(message);
+            try {
+                saveMessageLocally(message, true);
+            } catch (IOException | JSONException e) {
+                e.printStackTrace();
+            }
             editText.setText("");
         });
 
-        initPage();
+        mainActivity.db.collection("messages").document(Objects.requireNonNull(signedInAccount.getId()))
+                .addSnapshotListener(new EventListener<DocumentSnapshot>() {
+                    @Override
+                    public void onEvent(@Nullable DocumentSnapshot snapshot,
+                                        @Nullable FirebaseFirestoreException e) {
+                        if (e != null) {
+                            System.out.println("Listen failed."+ e);
+                            return;
+                        }
+
+                        String source = snapshot != null && snapshot.getMetadata().hasPendingWrites()
+                                ? "Local" : "Server";
+
+                        if (snapshot != null && snapshot.exists()) {
+                            Map<String, Object> data = Objects.requireNonNull(snapshot.getData());
+                            System.out.println(source + " data: " + data);
+                            for (Object messageData: data.values()){
+                                System.out.println("jjj: "+messageData); // todo finish here
+                            }
+                            //addMessageBox(receivedMessage, false);
+                          //  try {
+                           //     saveMessageLocally(receivedMessage,false);
+                          //  } catch (IOException | JSONException ex) {
+                           //     ex.printStackTrace();
+                           // }
+                            // todo delete message from db after saved locally
+                        } else {
+                            System.out.println(source + " data: null");
+                        }
+                    }
+                });
+
         return root;
     }
 
@@ -75,6 +128,16 @@ public class ChatFragment extends Fragment {
                 ("requestKey2", this, (requestKey, bundle) -> {
                     receiverContact = (Contact) bundle.getSerializable("pressedContactKey");
                     mainActivity.getSupportActionBar().setTitle(receiverContact.getName());
+                    messageFileName = signedInAccount.getId()+"-"+receiverContact.getId()+"-"+getResources().getString(R.string.messages_file_name);
+                    try {
+                        JSONArray data = new JSONArray(mainActivity.loadJSONFromAsset(context, messageFileName));
+                        for (int i=0; i<data.length(); i++){
+                            JSONObject msgObj = data.getJSONObject(i);
+                            addMessageBox(msgObj.getString("message"), msgObj.getBoolean("is_sender"));
+                        }
+                    } catch (JSONException | FileNotFoundException e) {
+                        e.printStackTrace();
+                    }
                 });
     }
 
@@ -103,4 +166,25 @@ public class ChatFragment extends Fragment {
                 .update(metaData).addOnFailureListener(e -> mainActivity.db.collection("messages")
                          .document(receiverContact.getId()).set(metaData));
     }
+
+    private void saveMessageLocally(String message, boolean isSender) throws IOException, JSONException {
+        File file = new File(context.getFilesDir(), messageFileName);
+        JSONArray data;
+        if (file.exists())
+            data = new JSONArray(mainActivity.loadJSONFromAsset(context, messageFileName));
+        else
+            data = new JSONArray();
+        JSONObject messageJson = new JSONObject();
+        messageJson.put("time", FieldValue.serverTimestamp());
+        messageJson.put("message", message);
+        messageJson.put("is_sender", isSender);
+        data.put(messageJson);
+
+        String userString = data.toString();
+        FileWriter fileWriter = new FileWriter(file);
+        BufferedWriter bufferedWriter = new BufferedWriter(fileWriter);
+        bufferedWriter.write(userString);
+        bufferedWriter.close();
+    }
+
 }

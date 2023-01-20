@@ -55,7 +55,6 @@ public class HomeFragment extends Fragment {
         View root = binding.getRoot();
         context = requireActivity().getApplicationContext();
         mainActivity = (MainActivity)requireContext();
-        contactsFileName = getResources().getString(R.string.contacts_file_name);
         signedInAccount = GoogleSignIn.getLastSignedInAccount(context);
         contactsFileName = signedInAccount.getId()+"-"+getResources().getString(R.string.contacts_file_name);
         binding.fab.setOnClickListener(view -> {
@@ -111,21 +110,26 @@ public class HomeFragment extends Fragment {
     }
     // maybe create a method to delete the paths where msgs travel from on contact
     // to another is db
-    private void deleteContactLocally(Contact contact) throws IOException, JSONException { // todo also delete all msgs
+    private void deleteContactLocally(Contact contact) throws IOException, JSONException {
+        // delete contact file
         File file = new File(context.getFilesDir(), contactsFileName);
         JSONArray data = new JSONArray(mainActivity.loadJSONFromAsset(context, contactsFileName));
         JSONArray modifiedData = new JSONArray();
-
         for (int i=0;i< data.length();i++) {
             if (!contact.getId().equals(data.getJSONObject(i).getString("id")))
                 modifiedData.put(data.get(i));
         }
-
         String userString = modifiedData.toString();
         FileWriter fileWriter = new FileWriter(file);
         BufferedWriter bufferedWriter = new BufferedWriter(fileWriter);
         bufferedWriter.write(userString);
         bufferedWriter.close();
+
+        // delete messages
+        String messageFileName = signedInAccount.getId()+"-"+contact.getId()+"-"+getResources().getString(R.string.messages_file_name);
+        file = new File(context.getFilesDir(), messageFileName);
+        if (file.exists())
+            file.delete();
     }
 
     private void initPage(){

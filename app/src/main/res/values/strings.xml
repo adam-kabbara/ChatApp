@@ -11,6 +11,7 @@
     <string name="menu_chat">Chat</string>
 
     <string name="contacts_file_name">contacts.json</string>
+    <string name="messages_file_name">messages.json</string>
     <string name="home_fragment_tag">home_frag_tag</string>
     <!-- TODO: Remove or change this placeholder text -->
     <string name="hello_blank_fragment">Hello blank fragment</string>
