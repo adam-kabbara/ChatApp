@@ -197,7 +197,6 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         toggle.setDrawerIndicatorEnabled(true);
         toggle.syncState(); // animate hamburger btn
 
-
         // navigate roots
         switch (viewId) {
             case R.id.nav_home:
@@ -299,7 +298,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
                             .placeholder(R.drawable.ic_menu_gallery)
                             .into(imageView);
                 } else {
-                    System.out.println( "get failed with "+ task.getException());
+                    System.out.println("get failed with "+ task.getException());
                 }
             }
         });

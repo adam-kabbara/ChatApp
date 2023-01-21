@@ -84,7 +84,7 @@ public class ChatFragment extends Fragment {
             }
             editText.setText("");
         });
-
+        // todo check if youser sent the message
         registration = mainActivity.db.collection("messages").document(Objects.requireNonNull(signedInAccount.getId()))
                 .addSnapshotListener((snapshot, e) -> {
                     if (e != null) {
@@ -95,30 +95,27 @@ public class ChatFragment extends Fragment {
                     if (snapshot != null && snapshot.exists()) {
                         Map<String, Object> data = Objects.requireNonNull(snapshot.getData());
                         for (String key : data.keySet()) {
-                            System.out.println("jjj: " + key);
                             HashMap<String, Object> message = (HashMap<String, Object>) snapshot.get(key);
                             assert message != null;
-                            addMessageBox((String) message.get("message"), false);
-                            try {
-                                saveMessageLocally((String) message.get("message"), false, FieldValue.serverTimestamp());
-                            } catch (IOException | JSONException ex) {
-                                ex.printStackTrace();
+                            if (((String) message.get("sender")).equals(receiverContact.getId()))
+                            {
+                                addMessageBox((String) message.get("message"), false);
+                                try {
+                                    saveMessageLocally((String) message.get("message"), false, FieldValue.serverTimestamp());
+                                } catch (IOException | JSONException ex) {
+                                    ex.printStackTrace();
+                                }
+                                // delete messages from db
+                                DocumentReference docRef = mainActivity.db.collection("messages").document(signedInAccount.getId());
+                                Map<String, Object> updates = new HashMap<>();
+                                updates.put(key, FieldValue.delete());
+                                docRef.update(updates);
                             }
-                            // delete messages from db
-                            DocumentReference docRef = mainActivity.db.collection("messages").document(signedInAccount.getId());
-                            Map<String, Object> updates = new HashMap<>();
-                            updates.put(key, FieldValue.delete());
-                            docRef.update(updates);
                         }
                     }
                 });
-        
-        return root;
-    }
 
-    private HashMap<String, Object> stringToHashMap(String string) {
-        HashMap<String, Object> data = new HashMap<>();
-        return data;
+        return root;
     }
 
     @Override
