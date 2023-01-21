@@ -7,11 +7,14 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 
+import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
 
@@ -148,11 +151,12 @@ public class ChatFragment extends Fragment {
 
     private void addMessageBox(String message, boolean isSender){
         View messageView = getLayoutInflater().inflate(R.layout.text_message, null);
+        LinearLayout linearLayout = messageView.findViewById(R.id.horizontalMsgLayout);
         TextView textView = messageView.findViewById(R.id.textViewMessage);
         textView.setText(message);
         if (isSender){
             textView.setBackgroundColor(getResources().getColor(R.color.teal_200));
-            //messageView.setGravity(Gravity.END); todo fix so that sender messages are at end
+            linearLayout.setGravity(Gravity.END); //todo fix so that sender messages are at end
         }
         else{
             textView.setBackgroundColor(getResources().getColor(R.color.peach_200));
