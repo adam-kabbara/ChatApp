@@ -42,6 +42,7 @@ import com.example.chatapp.databinding.ActivityMainBinding;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.DocumentSnapshot;
+import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.FirebaseFirestore;
 
 import org.json.JSONArray;
@@ -49,14 +50,18 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Map;
+import java.util.Objects;
 
 public class MainActivity extends AppCompatActivity implements NavigationView.OnNavigationItemSelectedListener{
 
@@ -105,6 +110,34 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         //todo put pfp - when first login if no firebase accoutn already use google pfp as chatapp pfp
         headerViewImage = headerView.findViewById(R.id.imageView);
         setPfpFromFire(signedInAccount.getId(), headerViewImage);
+
+        //db.collection("messages").document(Objects.requireNonNull(signedInAccount.getId()))
+        //        .addSnapshotListener((snapshot, e) -> {
+        //            if (e != null) {
+        //                System.out.println("Listen failed."+ e);
+        //                return;
+        //            }
+        //
+        //            if (snapshot != null && snapshot.exists()) {
+        //                Map<String, Object> data = Objects.requireNonNull(snapshot.getData());
+        //                for (String key: data.keySet()){
+        //                    System.out.println("jjj: "+key);
+        //                    HashMap<String, Object> message = (HashMap<String, Object>) snapshot.get(key);
+        //                    assert message != null;
+        //                    try {                        //TODO FILE NAME
+        //                        saveMessageLocallyOutsideListener("FILENAME", (String) message.get("message"),false, FieldValue.serverTimestamp());
+        //                    }
+        //                    catch (IOException | JSONException ex) {
+        //                        ex.printStackTrace();
+        //                    }
+        //                    // delete messages from db
+        //                    DocumentReference docRef = db.collection("messages").document(signedInAccount.getId());
+        //                    Map<String,Object> updates = new HashMap<>();
+        //                    updates.put(key, FieldValue.delete());
+        //                    docRef.update(updates);
+        //                }
+        //            }
+        //        });
     }
 
     @Override
@@ -278,5 +311,26 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         data.put("email", signedInAccount.getEmail());
         data.put("pfp_url", String.valueOf(signedInAccount.getPhotoUrl()));
         db.collection("users").document(requireNonNull(signedInAccount.getId())).set(data);
+    }
+
+    public void saveMessageLocallyOutsideListener(String filename, String message, boolean isSender, FieldValue time) throws IOException, JSONException {
+        // todo make sure to add in sequential time thing
+        File file = new File(context.getFilesDir(), filename);
+        JSONArray data;
+        if (file.exists())
+            data = new JSONArray(loadJSONFromAsset(context, filename));
+        else
+            data = new JSONArray();
+        JSONObject messageJson = new JSONObject();
+        messageJson.put("time", time);
+        messageJson.put("message", message);
+        messageJson.put("is_sender", isSender);
+        data.put(messageJson);
+
+        String userString = data.toString();
+        FileWriter fileWriter = new FileWriter(file);
+        BufferedWriter bufferedWriter = new BufferedWriter(fileWriter);
+        bufferedWriter.write(userString);
+        bufferedWriter.close();
     }
 }

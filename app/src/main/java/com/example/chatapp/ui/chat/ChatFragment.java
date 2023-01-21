@@ -29,6 +29,9 @@ import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.EventListener;
 import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.FirebaseFirestoreException;
+import com.google.firebase.firestore.ListenerRegistration;
+import com.google.firebase.firestore.Query;
+import com.google.firebase.firestore.QuerySnapshot;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -53,6 +56,8 @@ public class ChatFragment extends Fragment {
     private Context context;
     private Contact receiverContact;
     private String messageFileName;
+    private ScrollView scrollView;
+    private ListenerRegistration registration;
 
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
@@ -64,7 +69,7 @@ public class ChatFragment extends Fragment {
 
         ImageView sendButton = binding.sendButton;
         EditText editText = binding.plainTextInput;
-        ScrollView scrollView = binding.scrollView;
+        scrollView = binding.scrollView;
         initPage();
 
         sendButton.setOnClickListener(view -> {
@@ -80,44 +85,34 @@ public class ChatFragment extends Fragment {
             editText.setText("");
         });
 
-        mainActivity.db.collection("messages").document(Objects.requireNonNull(signedInAccount.getId()))
-                .addSnapshotListener(new EventListener<DocumentSnapshot>() {
-                    @Override
-                    public void onEvent(@Nullable DocumentSnapshot snapshot,
-                                        @Nullable FirebaseFirestoreException e) {
-                        if (e != null) {
-                            System.out.println("Listen failed."+ e);
-                            return;
-                        }
+        registration = mainActivity.db.collection("messages").document(Objects.requireNonNull(signedInAccount.getId()))
+                .addSnapshotListener((snapshot, e) -> {
+                    if (e != null) {
+                        System.out.println("Listen failed." + e);
+                        return;
+                    }
 
-                        String source = snapshot != null && snapshot.getMetadata().hasPendingWrites()
-                                ? "Local" : "Server";
-
-                        if (snapshot != null && snapshot.exists()) {
-                            Map<String, Object> data = Objects.requireNonNull(snapshot.getData());
-                            for (String key: data.keySet()){
-                                System.out.println("jjj: "+key);
-                                HashMap<String, Object> message = (HashMap<String, Object>) snapshot.get(key);
-                                assert message != null;
-                                addMessageBox((String) message.get("message"), false);
-                                try {
-                                    saveMessageLocally((String) message.get("message"),false, FieldValue.serverTimestamp());
-                                }
-                                catch (IOException | JSONException ex) {
-                                    ex.printStackTrace();
-                                }
-                                // delete messages from db
-                                DocumentReference docRef = mainActivity.db.collection("messages").document(signedInAccount.getId());
-                                Map<String,Object> updates = new HashMap<>();
-                                updates.put(key, FieldValue.delete());
-                                docRef.update(updates);
+                    if (snapshot != null && snapshot.exists()) {
+                        Map<String, Object> data = Objects.requireNonNull(snapshot.getData());
+                        for (String key : data.keySet()) {
+                            System.out.println("jjj: " + key);
+                            HashMap<String, Object> message = (HashMap<String, Object>) snapshot.get(key);
+                            assert message != null;
+                            addMessageBox((String) message.get("message"), false);
+                            try {
+                                saveMessageLocally((String) message.get("message"), false, FieldValue.serverTimestamp());
+                            } catch (IOException | JSONException ex) {
+                                ex.printStackTrace();
                             }
-                        } else {
-                            System.out.println(source + " data: null");
+                            // delete messages from db
+                            DocumentReference docRef = mainActivity.db.collection("messages").document(signedInAccount.getId());
+                            Map<String, Object> updates = new HashMap<>();
+                            updates.put(key, FieldValue.delete());
+                            docRef.update(updates);
                         }
                     }
                 });
-
+        
         return root;
     }
 
@@ -126,9 +121,10 @@ public class ChatFragment extends Fragment {
         return data;
     }
 
-    @Override // not sure if needed
-    public void onViewCreated(@NonNull View view, Bundle savedInstanceState) {
-        super.onViewCreated(view, savedInstanceState);
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        registration.remove();
     }
 
     private void initPage(){
@@ -162,6 +158,7 @@ public class ChatFragment extends Fragment {
             textView.setBackgroundColor(getResources().getColor(R.color.peach_200));
         }
         binding.linearLayout.addView(messageView);
+        scrollView.post(() -> scrollView.fullScroll(View.FOCUS_DOWN));
     }
 
     private void sendMessageFire(String message){
