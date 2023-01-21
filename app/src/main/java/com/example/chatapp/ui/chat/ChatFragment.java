@@ -7,26 +7,21 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 
-import android.util.Log;
-import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.EditText;
 import android.widget.ImageView;
-import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
 
-import com.bumptech.glide.Glide;
 import com.example.chatapp.Contact;
 import com.example.chatapp.MainActivity;
 import com.example.chatapp.R;
 import com.example.chatapp.databinding.FragmentChatBinding;
 import com.google.android.gms.auth.api.signin.GoogleSignIn;
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
-import com.google.android.gms.tasks.OnFailureListener;
-import com.google.firebase.Timestamp;
+import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.EventListener;
 import com.google.firebase.firestore.FieldValue;
@@ -41,7 +36,6 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -76,7 +70,7 @@ public class ChatFragment extends Fragment {
             scrollView.post(() -> scrollView.fullScroll(View.FOCUS_DOWN));
             sendMessageFire(message);
             try {
-                saveMessageLocally(message, true);
+                saveMessageLocally(message, true, FieldValue.serverTimestamp());
             } catch (IOException | JSONException e) {
                 e.printStackTrace();
             }
@@ -98,17 +92,23 @@ public class ChatFragment extends Fragment {
 
                         if (snapshot != null && snapshot.exists()) {
                             Map<String, Object> data = Objects.requireNonNull(snapshot.getData());
-                            System.out.println(source + " data: " + data);
-                            for (Object messageData: data.values()){
-                                System.out.println("jjj: "+messageData); // todo finish here
+                            for (String key: data.keySet()){
+                                System.out.println("jjj: "+key);
+                                HashMap<String, Object> message = (HashMap<String, Object>) snapshot.get(key);
+                                assert message != null;
+                                addMessageBox((String) message.get("message"), false);
+                                try {
+                                    saveMessageLocally((String) message.get("message"),false, FieldValue.serverTimestamp());
+                                }
+                                catch (IOException | JSONException ex) {
+                                    ex.printStackTrace();
+                                }
+                                // delete messages from db
+                                DocumentReference docRef = mainActivity.db.collection("messages").document(signedInAccount.getId());
+                                Map<String,Object> updates = new HashMap<>();
+                                updates.put(key, FieldValue.delete());
+                                docRef.update(updates);
                             }
-                            //addMessageBox(receivedMessage, false);
-                          //  try {
-                           //     saveMessageLocally(receivedMessage,false);
-                          //  } catch (IOException | JSONException ex) {
-                           //     ex.printStackTrace();
-                           // }
-                            // todo delete message from db after saved locally
                         } else {
                             System.out.println(source + " data: null");
                         }
@@ -116,6 +116,11 @@ public class ChatFragment extends Fragment {
                 });
 
         return root;
+    }
+
+    private HashMap<String, Object> stringToHashMap(String string) {
+        HashMap<String, Object> data = new HashMap<>();
+        return data;
     }
 
     @Override // not sure if needed
@@ -167,7 +172,8 @@ public class ChatFragment extends Fragment {
                          .document(receiverContact.getId()).set(metaData));
     }
 
-    private void saveMessageLocally(String message, boolean isSender) throws IOException, JSONException {
+    private void saveMessageLocally(String message, boolean isSender, FieldValue time) throws IOException, JSONException {
+        // todo make sure to add in sequential time thing
         File file = new File(context.getFilesDir(), messageFileName);
         JSONArray data;
         if (file.exists())
@@ -175,7 +181,7 @@ public class ChatFragment extends Fragment {
         else
             data = new JSONArray();
         JSONObject messageJson = new JSONObject();
-        messageJson.put("time", FieldValue.serverTimestamp());
+        messageJson.put("time", time);
         messageJson.put("message", message);
         messageJson.put("is_sender", isSender);
         data.put(messageJson);

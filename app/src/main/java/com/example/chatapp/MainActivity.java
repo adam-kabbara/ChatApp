@@ -149,6 +149,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         return true;
     }
     public void displayView(int viewId) {
+        boolean removeDrawerSelection = false;
         Fragment fragment = null;
         String title = getString(R.string.app_name);
         DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
@@ -162,7 +163,6 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         drawer.addDrawerListener(toggle);
         toggle.setDrawerIndicatorEnabled(true);
         toggle.syncState(); // animate hamburger btn
-        drawer.setDrawerLockMode(DrawerLayout.LOCK_MODE_UNLOCKED);
 
 
         // navigate roots
@@ -179,7 +179,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
             case R.id.nav_chat:
                 fragment = new ChatFragment();
                 viewIsAtHome = false;
-                drawer.setDrawerLockMode(DrawerLayout.LOCK_MODE_LOCKED_CLOSED);
+                removeDrawerSelection = true;
         }
         if (fragment != null) {
             FragmentTransaction ft = getSupportFragmentManager().beginTransaction();
@@ -190,6 +190,8 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
             getSupportActionBar().setTitle(title);
         }
         navigationView.setCheckedItem(viewId);
+        if (removeDrawerSelection)
+            navigationView.getMenu().getItem(1).setChecked(false); // home is at index 1
         drawer.closeDrawer(GravityCompat.START);
     }
 
