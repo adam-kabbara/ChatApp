@@ -110,34 +110,6 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         //todo put pfp - when first login if no firebase accoutn already use google pfp as chatapp pfp
         headerViewImage = headerView.findViewById(R.id.imageView);
         setPfpFromFire(signedInAccount.getId(), headerViewImage);
-
-        //db.collection("messages").document(Objects.requireNonNull(signedInAccount.getId()))
-        //        .addSnapshotListener((snapshot, e) -> {
-        //            if (e != null) {
-        //                System.out.println("Listen failed."+ e);
-        //                return;
-        //            }
-        //
-        //            if (snapshot != null && snapshot.exists()) {
-        //                Map<String, Object> data = Objects.requireNonNull(snapshot.getData());
-        //                for (String key: data.keySet()){
-        //                    System.out.println("jjj: "+key);
-        //                    HashMap<String, Object> message = (HashMap<String, Object>) snapshot.get(key);
-        //                    assert message != null;
-        //                    try {                        //TODO FILE NAME
-        //                        saveMessageLocallyOutsideListener("FILENAME", (String) message.get("message"),false, FieldValue.serverTimestamp());
-        //                    }
-        //                    catch (IOException | JSONException ex) {
-        //                        ex.printStackTrace();
-        //                    }
-        //                    // delete messages from db
-        //                    DocumentReference docRef = db.collection("messages").document(signedInAccount.getId());
-        //                    Map<String,Object> updates = new HashMap<>();
-        //                    updates.put(key, FieldValue.delete());
-        //                    docRef.update(updates);
-        //                }
-        //            }
-        //        });
     }
 
     @Override
@@ -234,6 +206,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
             drawer.closeDrawer(GravityCompat.START);
         }
         if (!viewIsAtHome) { //if the current view is not the home fragment
+            navigationView.getMenu().getItem(1).setChecked(true);
             displayView(R.id.nav_home); //display the home fragment
         } else {
             moveTaskToBack(true);  //If view is in home fragment, exit application

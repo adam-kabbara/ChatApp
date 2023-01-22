@@ -24,6 +24,7 @@ import com.example.chatapp.R;
 import com.example.chatapp.databinding.FragmentChatBinding;
 import com.google.android.gms.auth.api.signin.GoogleSignIn;
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
+import com.google.firebase.Timestamp;
 import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.EventListener;
@@ -42,10 +43,14 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.lang.reflect.Array;
+import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 
 public class ChatFragment extends Fragment {
@@ -74,17 +79,20 @@ public class ChatFragment extends Fragment {
 
         sendButton.setOnClickListener(view -> {
             String message = String.valueOf(editText.getText());
-            addMessageBox(message, true);
-            scrollView.post(() -> scrollView.fullScroll(View.FOCUS_DOWN));
-            sendMessageFire(message);
-            try {
-                saveMessageLocally(message, true, FieldValue.serverTimestamp());
-            } catch (IOException | JSONException e) {
-                e.printStackTrace();
+            long time = new Date().getTime();
+            if (!message.equals("")){
+                addMessageBox(message, true, time);
+                scrollView.post(() -> scrollView.fullScroll(View.FOCUS_DOWN));
+                sendMessageFire(message, time);
+                try {
+                    saveMessageLocally(message, true, time);
+                } catch (IOException | JSONException e) {
+                    e.printStackTrace();
+                }
+                editText.setText("");
             }
-            editText.setText("");
         });
-        // todo check if youser sent the message
+        ArrayList<String> receivedKeys = new ArrayList<>(); // to handel callback function when data is removed from db
         registration = mainActivity.db.collection("messages").document(Objects.requireNonNull(signedInAccount.getId()))
                 .addSnapshotListener((snapshot, e) -> {
                     if (e != null) {
@@ -95,21 +103,23 @@ public class ChatFragment extends Fragment {
                     if (snapshot != null && snapshot.exists()) {
                         Map<String, Object> data = Objects.requireNonNull(snapshot.getData());
                         for (String key : data.keySet()) {
-                            HashMap<String, Object> message = (HashMap<String, Object>) snapshot.get(key);
-                            assert message != null;
-                            if (((String) message.get("sender")).equals(receiverContact.getId()))
-                            {
-                                addMessageBox((String) message.get("message"), false);
-                                try {
-                                    saveMessageLocally((String) message.get("message"), false, FieldValue.serverTimestamp());
-                                } catch (IOException | JSONException ex) {
-                                    ex.printStackTrace();
+                            if(!receivedKeys.contains(key)){
+                                receivedKeys.add(key);
+                                HashMap<String, Object> message = (HashMap<String, Object>) snapshot.get(key);
+                                assert message != null;
+                                if (((String) message.get("sender")).equals(receiverContact.getId())) {
+                                    addMessageBox((String) message.get("message"), false, (long) message.get("time"));
+                                    try {
+                                        saveMessageLocally((String) message.get("message"), false, (Long) message.get("time"));
+                                    } catch (IOException | JSONException ex) {
+                                        ex.printStackTrace();
+                                    }
+                                    // delete messages from db
+                                    DocumentReference docRef = mainActivity.db.collection("messages").document(signedInAccount.getId());
+                                    Map<String, Object> updates = new HashMap<>();
+                                    updates.put(key, FieldValue.delete());
+                                    docRef.update(updates);
                                 }
-                                // delete messages from db
-                                DocumentReference docRef = mainActivity.db.collection("messages").document(signedInAccount.getId());
-                                Map<String, Object> updates = new HashMap<>();
-                                updates.put(key, FieldValue.delete());
-                                docRef.update(updates);
                             }
                         }
                     }
@@ -134,7 +144,7 @@ public class ChatFragment extends Fragment {
                         JSONArray data = new JSONArray(mainActivity.loadJSONFromAsset(context, messageFileName));
                         for (int i=0; i<data.length(); i++){
                             JSONObject msgObj = data.getJSONObject(i);
-                            addMessageBox(msgObj.getString("message"), msgObj.getBoolean("is_sender"));
+                            addMessageBox(msgObj.getString("message"), msgObj.getBoolean("is_sender"), -1);
                         }
                     } catch (JSONException | FileNotFoundException e) {
                         e.printStackTrace();
@@ -142,47 +152,95 @@ public class ChatFragment extends Fragment {
                 });
     }
 
-    private void addMessageBox(String message, boolean isSender){
+    private void addMessageBox(String message, boolean isSender, long time){
         View messageView = getLayoutInflater().inflate(R.layout.text_message, null);
-        LinearLayout linearLayout = messageView.findViewById(R.id.horizontalMsgLayout);
+        LinearLayout messageLayout = messageView.findViewById(R.id.horizontalMsgLayout);
         TextView textView = messageView.findViewById(R.id.textViewMessage);
         textView.setText(message);
+        messageView.setTag(time); // tag of textview will hold its time data
         if (isSender){
             textView.setBackgroundColor(getResources().getColor(R.color.teal_200));
-            linearLayout.setGravity(Gravity.END); //todo fix so that sender messages are at end
+            messageLayout.setGravity(Gravity.END); //todo fix so that sender messages are at end
         }
         else{
             textView.setBackgroundColor(getResources().getColor(R.color.peach_200));
         }
-        binding.linearLayout.addView(messageView);
+        if (time == -1) // so we are reading from a file and messages are already sorted
+            binding.linearLayout.addView(messageView);
+        else{
+            boolean saved = false;
+            if (binding.linearLayout.getChildCount() > 0) {
+                for (int i=binding.linearLayout.getChildCount()-1; i >= 0; i--) {
+                    View tv = binding.linearLayout.getChildAt(i);
+                    System.out.println(time);
+                    System.out.println(tv.getTag());
+                    System.out.println(time > (long) tv.getTag());
+                    if (time > (long) tv.getTag()) {
+                        binding.linearLayout.addView(messageView, i+1);
+                        saved = true;
+                        break;
+                    }
+                }
+                if (!saved) {
+                    binding.linearLayout.addView(messageView, 0);
+                }
+            }
+            else{
+                binding.linearLayout.addView(messageView);
+            }
+        }
+
         scrollView.post(() -> scrollView.fullScroll(View.FOCUS_DOWN));
     }
 
-    private void sendMessageFire(String message){
+    private void sendMessageFire(String message, long time){
         HashMap<String, Object> metaData = new HashMap<>();
         HashMap<String, Object> data = new HashMap<>();
         data.put("sender", signedInAccount.getId());
         data.put("message", message);
-        data.put("time", FieldValue.serverTimestamp());
+        data.put("time", time);
         metaData.put(UUID.randomUUID().toString(), data); // uuid not 100% unique
         mainActivity.db.collection("messages").document(receiverContact.getId())
                 .update(metaData).addOnFailureListener(e -> mainActivity.db.collection("messages")
                          .document(receiverContact.getId()).set(metaData));
     }
 
-    private void saveMessageLocally(String message, boolean isSender, FieldValue time) throws IOException, JSONException {
-        // todo make sure to add in sequential time thing
+    private void saveMessageLocally(String message, boolean isSender, long time) throws IOException, JSONException {
         File file = new File(context.getFilesDir(), messageFileName);
         JSONArray data;
-        if (file.exists())
-            data = new JSONArray(mainActivity.loadJSONFromAsset(context, messageFileName));
-        else
-            data = new JSONArray();
         JSONObject messageJson = new JSONObject();
         messageJson.put("time", time);
         messageJson.put("message", message);
         messageJson.put("is_sender", isSender);
-        data.put(messageJson);
+
+        if (file.exists()){
+            data = new JSONArray(mainActivity.loadJSONFromAsset(context, messageFileName));
+            boolean saved = false;
+            for (int i=data.length()-1; i>=0; i--){
+                JSONObject msgObj = data.getJSONObject(i);
+                System.out.println(time);
+                System.out.println(msgObj.getLong("time"));
+                System.out.println(time > msgObj.getLong("time"));
+                if (time > msgObj.getLong("time")) {
+                    for (int j = data.length(); j > i+1; j--){
+                        data.put(j, data.get(j-1));
+                    }
+                    data.put(i+1, messageJson);
+                    saved = true;
+                    break;
+                }
+            }
+            if (!saved){
+                for (int j = data.length(); j > 0; j--){
+                    data.put(j, data.get(j-1));
+                }
+                data.put(0, messageJson);
+            }
+        }
+        else {
+            data = new JSONArray();
+            data.put(messageJson);
+        }
 
         String userString = data.toString();
         FileWriter fileWriter = new FileWriter(file);
