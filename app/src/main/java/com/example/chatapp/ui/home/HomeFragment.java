@@ -99,7 +99,7 @@ public class HomeFragment extends Fragment {
                                 assert message != null;
                                 try {
                                     String messageFileName = signedInAccount.getId()+"-"+message.get("sender")+"-"+mainActivity.getResources().getString(R.string.messages_file_name);
-                                    mainActivity.saveMessageLocally((String) message.get("message"), false, (Long) message.get("time"), messageFileName);
+                                    mainActivity.saveMessageLocally((String) message.get("message"), false, (long) message.get("time"), messageFileName);
                                 } catch (IOException | JSONException ex) {
                                     ex.printStackTrace();
                                 }
@@ -141,6 +141,7 @@ public class HomeFragment extends Fragment {
     public void onDestroyView() {
         super.onDestroyView();
         binding = null;
+        registration.remove();
     }
 
     private void saveNewContactLocally(Contact contact) throws JSONException, IOException {
@@ -166,7 +167,7 @@ public class HomeFragment extends Fragment {
     // maybe create a method to delete the paths where msgs travel from on contact
     // to another is db
     private void deleteContactLocally(Contact contact) throws IOException, JSONException {
-        // delete contact file
+        // delete contact file cs: delete
         File file = new File(context.getFilesDir(), contactsFileName);
         JSONArray data = new JSONArray(mainActivity.loadJSONFromAsset(context, contactsFileName));
         JSONArray modifiedData = new JSONArray();

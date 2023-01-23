@@ -173,6 +173,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         switch (viewId) {
             case R.id.nav_home:
                 fragment = new HomeFragment();
+                navigationView.getMenu().getItem(1).setChecked(true);
                 viewIsAtHome = true;
                 break;
             case R.id.nav_new_contact:
@@ -206,7 +207,6 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
             drawer.closeDrawer(GravityCompat.START);
         }
         if (!viewIsAtHome) { //if the current view is not the home fragment
-            navigationView.getMenu().getItem(1).setChecked(true);
             displayView(R.id.nav_home); //display the home fragment
         } else {
             moveTaskToBack(true);  //If view is in home fragment, exit application
@@ -288,7 +288,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     // this method is used in both the home fragment and chat fragment
     public void saveMessageLocally(String message, boolean isSender, long time, String messageFileName) throws IOException, JSONException {
         File file = new File(context.getFilesDir(), messageFileName);
-        JSONArray data;
+        JSONArray data; // cs: add
         JSONObject messageJson = new JSONObject();
         messageJson.put("time", time);
         messageJson.put("message", message);
@@ -318,7 +318,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
                 data.put(0, messageJson);
             }
         }
-        else {
+        else { // cs: create
             data = new JSONArray();
             data.put(messageJson);
         }
