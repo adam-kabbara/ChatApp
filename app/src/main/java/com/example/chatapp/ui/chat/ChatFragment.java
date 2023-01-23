@@ -85,7 +85,7 @@ public class ChatFragment extends Fragment {
                 scrollView.post(() -> scrollView.fullScroll(View.FOCUS_DOWN));
                 sendMessageFire(message, time);
                 try {
-                    saveMessageLocally(message, true, time);
+                    mainActivity.saveMessageLocally(message, true, time, messageFileName);
                 } catch (IOException | JSONException e) {
                     e.printStackTrace();
                 }
@@ -110,7 +110,7 @@ public class ChatFragment extends Fragment {
                                 if (((String) message.get("sender")).equals(receiverContact.getId())) {
                                     addMessageBox((String) message.get("message"), false, (long) message.get("time"));
                                     try {
-                                        saveMessageLocally((String) message.get("message"), false, (Long) message.get("time"));
+                                        mainActivity.saveMessageLocally((String) message.get("message"), false, (Long) message.get("time"), messageFileName);
                                     } catch (IOException | JSONException ex) {
                                         ex.printStackTrace();
                                     }
@@ -129,8 +129,8 @@ public class ChatFragment extends Fragment {
     }
 
     @Override
-    public void onDestroy() {
-        super.onDestroy();
+    public void onDestroyView() { //todo ondystory ?
+        super.onDestroyView();
         registration.remove();
     }
 
@@ -204,49 +204,4 @@ public class ChatFragment extends Fragment {
                 .update(metaData).addOnFailureListener(e -> mainActivity.db.collection("messages")
                          .document(receiverContact.getId()).set(metaData));
     }
-
-    private void saveMessageLocally(String message, boolean isSender, long time) throws IOException, JSONException {
-        File file = new File(context.getFilesDir(), messageFileName);
-        JSONArray data;
-        JSONObject messageJson = new JSONObject();
-        messageJson.put("time", time);
-        messageJson.put("message", message);
-        messageJson.put("is_sender", isSender);
-
-        if (file.exists()){
-            data = new JSONArray(mainActivity.loadJSONFromAsset(context, messageFileName));
-            boolean saved = false;
-            for (int i=data.length()-1; i>=0; i--){
-                JSONObject msgObj = data.getJSONObject(i);
-                System.out.println(time);
-                System.out.println(msgObj.getLong("time"));
-                System.out.println(time > msgObj.getLong("time"));
-                if (time > msgObj.getLong("time")) {
-                    for (int j = data.length(); j > i+1; j--){
-                        data.put(j, data.get(j-1));
-                    }
-                    data.put(i+1, messageJson);
-                    saved = true;
-                    break;
-                }
-            }
-            if (!saved){
-                for (int j = data.length(); j > 0; j--){
-                    data.put(j, data.get(j-1));
-                }
-                data.put(0, messageJson);
-            }
-        }
-        else {
-            data = new JSONArray();
-            data.put(messageJson);
-        }
-
-        String userString = data.toString();
-        FileWriter fileWriter = new FileWriter(file);
-        BufferedWriter bufferedWriter = new BufferedWriter(fileWriter);
-        bufferedWriter.write(userString);
-        bufferedWriter.close();
     }
-
-}

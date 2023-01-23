@@ -78,7 +78,7 @@ public class NewContactFragment extends Fragment {
     private void initListView(ArrayList<Contact> contactsArrayList){
         listView = binding.newContactListView;
         // Pass results to ListViewAdapter Class
-        adapter = new ListViewAdapter(context, contactsArrayList, true); //todo get contacts form firbase users
+        adapter = new ListViewAdapter(mainActivity, contactsArrayList, true);
         listView.setAdapter(adapter);
         searchView = binding.newContactSearchView;
         searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {

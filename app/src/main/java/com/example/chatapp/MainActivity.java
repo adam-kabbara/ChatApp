@@ -285,19 +285,43 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         db.collection("users").document(requireNonNull(signedInAccount.getId())).set(data);
     }
 
-    public void saveMessageLocallyOutsideListener(String filename, String message, boolean isSender, FieldValue time) throws IOException, JSONException {
-        // todo make sure to add in sequential time thing
-        File file = new File(context.getFilesDir(), filename);
+    // this method is used in both the home fragment and chat fragment
+    public void saveMessageLocally(String message, boolean isSender, long time, String messageFileName) throws IOException, JSONException {
+        File file = new File(context.getFilesDir(), messageFileName);
         JSONArray data;
-        if (file.exists())
-            data = new JSONArray(loadJSONFromAsset(context, filename));
-        else
-            data = new JSONArray();
         JSONObject messageJson = new JSONObject();
         messageJson.put("time", time);
         messageJson.put("message", message);
         messageJson.put("is_sender", isSender);
-        data.put(messageJson);
+
+        if (file.exists()){
+            data = new JSONArray(loadJSONFromAsset(context, messageFileName));
+            boolean saved = false;
+            for (int i=data.length()-1; i>=0; i--){
+                JSONObject msgObj = data.getJSONObject(i);
+                System.out.println(time);
+                System.out.println(msgObj.getLong("time"));
+                System.out.println(time > msgObj.getLong("time"));
+                if (time > msgObj.getLong("time")) {
+                    for (int j = data.length(); j > i+1; j--){
+                        data.put(j, data.get(j-1));
+                    }
+                    data.put(i+1, messageJson);
+                    saved = true;
+                    break;
+                }
+            }
+            if (!saved){
+                for (int j = data.length(); j > 0; j--){
+                    data.put(j, data.get(j-1));
+                }
+                data.put(0, messageJson);
+            }
+        }
+        else {
+            data = new JSONArray();
+            data.put(messageJson);
+        }
 
         String userString = data.toString();
         FileWriter fileWriter = new FileWriter(file);
