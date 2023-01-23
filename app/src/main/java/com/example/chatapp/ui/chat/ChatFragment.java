@@ -130,8 +130,8 @@ public class ChatFragment extends Fragment {
     }
 
     @Override
-    public void onDestroyView() { //todo ondystory ?
-        super.onDestroyView();
+    public void onDestroy() {
+        super.onDestroy();
         registration.remove();
     }
 
