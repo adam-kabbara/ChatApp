@@ -78,6 +78,8 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     private boolean viewIsAtHome = true;
     public ArrayList<Contact> contacts;
     public FirebaseFirestore db;
+    public ArrayList<String> receivedKeys = new ArrayList<>(); // to handel callback function when data is removed from db
+
 
 
     @Override

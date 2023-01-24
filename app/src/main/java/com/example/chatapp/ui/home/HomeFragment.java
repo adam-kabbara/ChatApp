@@ -82,7 +82,6 @@ public class HomeFragment extends Fragment {
                     }
                 });
 
-        ArrayList<String> receivedKeys = new ArrayList<>(); // to handel callback function when data is removed from db
         registration = mainActivity.db.collection("messages").document(Objects.requireNonNull(signedInAccount.getId()))
                 .addSnapshotListener((snapshot, e) -> {
                     if (e != null) {
@@ -93,8 +92,8 @@ public class HomeFragment extends Fragment {
                     if (snapshot != null && snapshot.exists()) {
                         Map<String, Object> data = Objects.requireNonNull(snapshot.getData());
                         for (String key : data.keySet()) {
-                            if(!receivedKeys.contains(key)){
-                                receivedKeys.add(key);
+                            if(!mainActivity.receivedKeys.contains(key)){
+                                mainActivity.receivedKeys.add(key);
                                 HashMap<String, Object> message = (HashMap<String, Object>) snapshot.get(key);
                                 assert message != null;
                                 try {
@@ -138,10 +137,10 @@ public class HomeFragment extends Fragment {
     }
 
     @Override
-    public void onDestroy() {
-        super.onDestroy();
-        binding = null;
-        registration.remove();
+    public void onDestroyView() {
+        super.onDestroyView(); // changed to onDestroyView which is guaranteed to be called
+        binding = null; // unlike onDestroy
+
     }
 
     private void saveNewContactLocally(Contact contact) throws JSONException, IOException {

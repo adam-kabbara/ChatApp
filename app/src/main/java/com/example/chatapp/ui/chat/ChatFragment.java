@@ -93,7 +93,7 @@ public class ChatFragment extends Fragment {
                 editText.setText("");
             }
         });
-        ArrayList<String> receivedKeys = new ArrayList<>(); // to handel callback function when data is removed from db
+
         registration = mainActivity.db.collection("messages").document(Objects.requireNonNull(signedInAccount.getId()))
                 .addSnapshotListener((snapshot, e) -> {
                     if (e != null) {
@@ -104,8 +104,8 @@ public class ChatFragment extends Fragment {
                     if (snapshot != null && snapshot.exists()) {
                         Map<String, Object> data = Objects.requireNonNull(snapshot.getData());
                         for (String key : data.keySet()) {
-                            if(!receivedKeys.contains(key)){
-                                receivedKeys.add(key);
+                            if(!mainActivity.receivedKeys.contains(key)){
+                                mainActivity.receivedKeys.add(key);
                                 HashMap<String, Object> message = (HashMap<String, Object>) snapshot.get(key);
                                 assert message != null;
                                 if (((String) message.get("sender")).equals(receiverContact.getId())) {
@@ -130,8 +130,8 @@ public class ChatFragment extends Fragment {
     }
 
     @Override
-    public void onDestroy() {
-        super.onDestroy();
+    public void onDestroyView() {
+        super.onDestroyView();
         registration.remove();
     }
 
